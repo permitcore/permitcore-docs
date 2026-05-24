@@ -1,0 +1,124 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "PermitCore",
+  "colors": {
+    "primary": "#1b4dd1",
+    "light": "#7aa0ff",
+    "dark": "#0a0a0a"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Introduction",
+        "pages": [
+          "introduction",
+          "quickstart",
+          "authentication"
+        ]
+      },
+      {
+        "group": "Concepts",
+        "pages": [
+          "concepts/jurisdictions",
+          "concepts/cohorts",
+          "concepts/data-freshness",
+          "concepts/rate-limits",
+          "concepts/data-licensing"
+        ]
+      },
+      {
+        "group": "API Reference",
+        "pages": [
+          "api-reference/introduction",
+          "api-reference/jurisdictions/overview",
+          "api-reference/jurisdictions/cohort-distribution",
+          "api-reference/permits",
+          "api-reference/keys"
+        ]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "errors",
+          "changelog"
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://permitcore.io"
+  },
+  "background": {
+    "color": {
+      "light": "#fafafb",
+      "dark": "#0e1218"
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Sandbox",
+        "href": "https://permitcore.io/sandbox"
+      },
+      {
+        "label": "Pricing",
+        "href": "https://permitcore.io/pricing"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get API Key",
+      "href": "https://permitcore.io/signup"
+    }
+  },
+  "search": {
+    "prompt": "Search the docs…"
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true,
+    "raiseIssue": true
+  },
+  "footer": {
+    "socials": {
+      "website": "https://permitcore.io"
+    },
+    "links": [
+      {
+        "header": "Product",
+        "items": [
+          { "label": "Sandbox", "href": "https://permitcore.io/sandbox" },
+          { "label": "Pricing", "href": "https://permitcore.io/pricing" },
+          { "label": "Coverage", "href": "https://permitcore.io/coverage" }
+        ]
+      },
+      {
+        "header": "Support",
+        "items": [
+          { "label": "Email kian@permitcore.io", "href": "mailto:kian@permitcore.io" },
+          { "label": "Changelog", "href": "/changelog" }
+        ]
+      }
+    ]
+  },
+  "integrations": {
+    "posthog": {
+      "apiKey": "phc_CTFpdUtG8UNwSDTZ7HasZN6ysB9KhSTwriteQnAwtDKs",
+      "apiHost": "https://us.i.posthog.com"
+    }
+  },
+  "fonts": {
+    "heading": {
+      "family": "Geist",
+      "weight": 600
+    },
+    "body": {
+      "family": "Geist",
+      "weight": 400
+    }
+  }
+}

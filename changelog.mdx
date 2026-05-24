@@ -12,18 +12,20 @@ First public release.
 - **`GET /v1/jurisdictions/{slug}/cohorts/distribution`** — per-jurisdiction
   cohort breakdown across the canonical 18 cohorts. Cached 1 hour upstream
   (`Cache-Control: max-age=3600`).
-- **22 MAPPED metros** covering the top US permit-volume markets — NYC,
-  LA, Chicago, Houston, Phoenix, SF, Austin, Seattle, Boston, Atlanta,
-  Miami, DC, Dallas, Philadelphia, San Diego, Charlotte, Portland,
-  Nashville, Las Vegas, Columbus, Indianapolis, Fort Worth, San Antonio.
-  Three additional metros (Denver, Oklahoma City, Jacksonville) in
-  DEPLOY-PENDING status; ingest activates Q3 2026.
+- **26 metros covered** (18 MAPPED + 5 SOURCE + 3 DEPLOY-PENDING):
+  - **MAPPED (18):** NYC, LA, Chicago, Houston, SF, Seattle, Boston, Atlanta,
+    DC, Dallas, Philadelphia, San Diego, Charlotte, Nashville, Columbus,
+    Indianapolis, Fort Worth, San Antonio.
+  - **SOURCE (5):** Phoenix, Austin, Miami, Portland, Las Vegas.
+  - **DEPLOY-PENDING (3):** Denver, Oklahoma City, Jacksonville.
+
+  See [Concepts → Jurisdictions](/concepts/jurisdictions) for the status meanings.
 - **18 canonical cohorts** classified per permit via PermitCore's LLM-1
   classifier. See [Concepts → Cohorts](/concepts/cohorts) for the full
   taxonomy + what each cohort covers.
 - **Free in-browser sandbox** at <a href="https://permitcore.io/sandbox">
   permitcore.io/sandbox</a> — client-side DuckDB-WASM queries against the
-  last 10 days of permits across 22 metros. No signup required.
+  last 10 days of permits across the 18 MAPPED metros. No signup required.
 - **Self-serve signup + tier subscriptions** via Stripe Checkout.
   Free / Hobby ($49/mo) / Builder ($149/mo) / Growth ($299/mo) tiers.
 

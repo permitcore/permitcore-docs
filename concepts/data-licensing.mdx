@@ -1,0 +1,79 @@
+---
+title: "Data licensing"
+description: "What you can and can't do with PermitCore data. Public-record source columns vs PermitCore-enriched columns, commercial use, and attribution."
+---
+
+PermitCore's data is built from two layers stacked on top of each metro's
+**public-record permit feed**. The licensing rules differ for each layer.
+
+## Two layers in every response
+
+| Layer | Source | Licensing |
+| --- | --- | --- |
+| **Source columns** | The metro's public-record permit feed (NYC DOB, LA Building & Safety, etc.). Includes permit number, issue date, address, raw permit type, applicant name. | Public record. Use without restriction. |
+| **PermitCore-enriched columns** | Built by PermitCore on top of the source feed. Includes cohort tag, IBC occupancy class, parcel join, DQ flags, valuation imputation, contractor normalization. | Proprietary. Licensed for use within your active subscription tier. |
+
+A response row mixes both layers — you receive them together; the
+licensing distinction applies per-column to downstream use.
+
+## What you can do (any paid tier)
+
+- **Build internal tools, dashboards, and ML pipelines** on top of
+  PermitCore data inside your organization.
+- **Power features for your end users** that surface either layer
+  (e.g., a CRM that shows a contractor's recent permits to the sales
+  team).
+- **Cache responses** for as long as your application needs — there is
+  no TTL imposed on stored response bodies.
+- **Cite and reference** PermitCore-enriched columns in research,
+  reports, or marketing collateral, with attribution.
+
+## What requires a higher tier or written approval
+
+- **Bulk redistribution of PermitCore-enriched columns** — publishing
+  full datasets including cohort tags / DQ flags / parcel joins requires
+  a Pro tier or written agreement.
+- **Reselling the API itself** — proxying or rebranding requests to
+  `api.permitcore.io` as your own product requires a Pro tier with
+  reseller terms.
+- **Using PermitCore-enriched columns in a directly competitive product**
+  (i.e., another building-permit data API targeting the same customers)
+  requires written approval.
+
+Source columns can be redistributed freely as public record.
+
+## Attribution
+
+When you publish reports, charts, or dashboards that include
+PermitCore-enriched columns to a public audience, include the line:
+
+> Data sourced via PermitCore (permitcore.io).
+
+For internal tools used only by your organization or paid end-users,
+attribution is appreciated but not required.
+
+## Storage + retention
+
+You may store API responses indefinitely. If PermitCore corrects a
+record (e.g., DQ-flag update after a parcel layer refresh), the
+correction is exposed through subsequent API calls — your stored
+copy is not automatically invalidated. For applications that need
+to track corrections, re-poll the affected jurisdiction periodically
+and reconcile by `permit_id`.
+
+## Termination
+
+Subscription cancellation does not require you to delete API responses
+you have already stored. It does revoke your right to make new requests
+and to use PermitCore-enriched columns in features published or shipped
+after the cancellation date.
+
+## Questions
+
+For commercial-use questions outside the scope above, or to discuss a
+Pro / Enterprise agreement, email
+<a href="mailto:kian@permitcore.io">kian@permitcore.io</a>.
+
+The full Terms of Service governing API access and data use lives on
+<a href="https://permitcore.io">permitcore.io</a>; this page is the
+plain-language summary for developers integrating the API.

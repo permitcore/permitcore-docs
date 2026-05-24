@@ -63,7 +63,35 @@ for the period. Bring the key up a tier or wait for the period to reset
 
 ## Retry guidance
 
+Retryable status codes: `429` (respect `Retry-After`), `500`, `502`, `503`,
+`504`. All 4xx codes other than `429` are application errors and should NOT
+be retried — fix the request and resubmit.
+
 ```js Node.js
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
+class PermitcoreError extends Error {
+  constructor(status, code, message) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+async function callPermitcore(path) {
+  const res = await fetch(`https://api.permitcore.io${path}`, {
+    headers: {
+      Authorization: `Bearer ${process.env.PERMITCORE_API_KEY}`,
+      Accept: "application/json",
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new PermitcoreError(res.status, body?.error?.code, body?.error?.message);
+  }
+  return res.json();
+}
+
 async function withRetries(fn, maxAttempts = 4) {
   let lastErr;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -71,18 +99,18 @@ async function withRetries(fn, maxAttempts = 4) {
       return await fn();
     } catch (err) {
       lastErr = err;
-      if (!err.retryable || attempt === maxAttempts) throw err;
+      const retryable = err instanceof PermitcoreError && RETRYABLE_STATUS.has(err.status);
+      if (!retryable || attempt === maxAttempts) throw err;
       const delay = Math.min(2 ** attempt * 1000, 30000);
       await new Promise((r) => setTimeout(r, delay));
     }
   }
   throw lastErr;
 }
-```
 
-Retryable status codes: `429` (respect `Retry-After`), `500`, `502`, `503`,
-`504`. All 4xx codes other than `429` are application errors and should NOT
-be retried — fix the request and resubmit.
+// Usage:
+const data = await withRetries(() => callPermitcore("/v1/jurisdictions/nyc/cohorts/distribution"));
+```
 
 ## Diagnosing in production
 

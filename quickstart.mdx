@@ -75,7 +75,7 @@ You'll get back the jurisdiction's canonical 18 cohort breakdown:
   "jurisdiction_slug": "nyc",
   "jurisdiction_display_name": "New York City, NY",
   "as_of_utc": "2026-05-24T02:00:00Z",
-  "total_target_permits": 2998000,
+  "total_target_permits": 3218856,
   "cohort_distribution": {
     "multifamily_alteration": 2474522,
     "temporary_construction_support": 146420,
@@ -99,6 +99,18 @@ You'll get back the jurisdiction's canonical 18 cohort breakdown:
 }
 ```
 
+`total_target_permits` is the **buyer-targeted matview slice** for the
+jurisdiction — lifetime accumulation (no time window) of permits that
+match PermitCore's matview filter (commercial / mixed / industrial work
+classes, OR ≥5 residential units, OR explicit multifamily, OR qualifying
+ADU). The sum of `cohort_distribution` values is **less than**
+`total_target_permits` by the implicit NULL-segment count: permits that
+pass the matview filter but didn't match any of the 18 cohort CASE
+branches. For NYC, the full silver permit table holds ~7.63M permits
+across all work types; the matview targets ~3.22M of those as the
+buyer-relevant slice — see [the explainer in the API reference](/api-reference/jurisdictions/cohort-distribution#what-is-total_target_permits)
+for the full data model.
+
 All 18 canonical cohorts are always present (zero-filled if a jurisdiction
 has no rows in that cohort).
 
@@ -114,7 +126,19 @@ has no rows in that cohort).
   <Card title="Rate limits" icon="gauge" href="/concepts/rate-limits">
     Per-tier quotas + how to handle 429 responses.
   </Card>
+  <Card title="Data licensing" icon="scale-balanced" href="/concepts/data-licensing">
+    Commercial-use terms + attribution for paid tiers.
+  </Card>
   <Card title="API reference" icon="book" href="/api-reference/introduction">
     Full endpoint catalog with request/response shapes.
   </Card>
 </CardGroup>
+
+## Need help
+
+- Open the [API reference](/api-reference/introduction) for endpoint
+  shapes + the [errors page](/errors) for retry semantics.
+- For account, billing, or integration support, email
+  <a href="mailto:kian@permitcore.io">kian@permitcore.io</a> — include
+  your key prefix (first 12 characters) and the `x-permitcore-request-id`
+  from the failing response for fastest triage.

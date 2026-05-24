@@ -1,6 +1,6 @@
 ---
 title: "Jurisdictions"
-description: "What a jurisdiction is, the 22+3 metro coverage today, and the MAPPED / SOURCE / DEPLOY-PENDING status model."
+description: "What a jurisdiction is, the 26-metro coverage map today, and the MAPPED / SOURCE / DEPLOY-PENDING status model."
 ---
 
 A **jurisdiction** is a single city or metro area that PermitCore ingests
@@ -11,14 +11,17 @@ permits from. Identified by a lowercase URL-safe slug (`nyc`, `la`, `houston`).
 | Status | Count | What this means |
 |--------|-------|-----------------|
 | `MAPPED` | 18 metros | Full ingest active. Daily refresh. Cohort classification + DQ flags inline. Parcel-joined geometry where the metro publishes it. |
-| `SOURCE` | 4 metros | Bronze ingest active. Sample-tier rows visible. MAPPED promotion in production-ingest queue (Q3 2026). |
+| `SOURCE` | 5 metros | Bronze ingest active. Sample-tier rows visible. MAPPED promotion in production-ingest queue (Q3 2026). |
 | `DEPLOY-PENDING` | 3 metros | Code merged; production-ingest queue rollout Q3 2026. No live data yet. |
 
-The 25 metros today (NYC, LA, Chicago, Houston, Phoenix, San Francisco,
-Austin, Seattle, Boston, Atlanta, Miami, DC, Dallas, Philadelphia, San Diego,
-Charlotte, Portland, Nashville, Las Vegas, Columbus, Indianapolis, Fort Worth,
-San Antonio, plus the 3 DEPLOY-PENDING) cover the top US metros by permit
-volume; expansion follows a defined cohort coverage roadmap.
+The **26 metros today** cover the top US metros by permit volume; expansion
+follows a defined cohort coverage roadmap.
+
+- **MAPPED (18):** NYC, LA, Chicago, Houston, SF, Seattle, Boston, Atlanta,
+  DC, Dallas, Philadelphia, San Diego, Charlotte, Nashville, Columbus,
+  Indianapolis, Fort Worth, San Antonio.
+- **SOURCE (5):** Phoenix, Austin, Miami, Portland, Las Vegas.
+- **DEPLOY-PENDING (3):** Denver, Oklahoma City, Jacksonville.
 
 ## Status meanings
 
@@ -41,7 +44,7 @@ returns `404` for these slugs. ETA: Q3 2026.
 
 ## Slug list
 
-Browse all 25 metro pages: <a href="https://permitcore.io">permitcore.io</a>
+Browse all 26 metro pages: <a href="https://permitcore.io">permitcore.io</a>
 (metro tiles on the homepage).
 
 A complete machine-readable list is available in the cohort-distribution
@@ -52,3 +55,4 @@ PermitCore has any data for.
 
 - [Cohorts](/concepts/cohorts) — the 18-cohort taxonomy that classifies every permit
 - [Data freshness](/concepts/data-freshness) — daily refresh cadence + `as_of_utc` interpretation
+- [Data licensing](/concepts/data-licensing) — commercial-use terms + attribution

@@ -34,8 +34,13 @@ for that jurisdiction as of the `as_of_utc` timestamp.
   ISO 8601 UTC timestamp marking when the underlying data was last computed.
 </ResponseField>
 <ResponseField name="total_target_permits" type="number">
-  Total permits in the rolling window across all 18 cohorts. Equal to the
-  sum of `cohort_distribution` values.
+  Count of buyer-targeted permits for this jurisdiction — lifetime
+  accumulation, no time window. See the
+  [What is `total_target_permits`?](#what-is-total_target_permits)
+  section below for the matview filter definition. The sum of
+  `cohort_distribution` values is **less than** `total_target_permits`
+  by the implicit NULL-segment count (permits that pass the matview
+  filter but didn't match any of the 18 cohort CASE branches).
 </ResponseField>
 <ResponseField name="cohort_distribution" type="object">
   Map of `{ cohort_slug: integer_count }` for all 18 canonical cohorts.
@@ -85,7 +90,7 @@ data = r.json()
   "jurisdiction_slug": "nyc",
   "jurisdiction_display_name": "New York City, NY",
   "as_of_utc": "2026-05-24T02:00:00Z",
-  "total_target_permits": 2998000,
+  "total_target_permits": 3218856,
   "cohort_distribution": {
     "adu_qualifying": 380,
     "civic": 1820,
@@ -108,6 +113,61 @@ data = r.json()
   }
 }
 ```
+
+The 18 `cohort_distribution` values sum to 2,998,250 — the remaining
+220,606 permits (matview total 3,218,856 − cohort sum) fall in the
+implicit NULL segment: rows that pass the matview filter but didn't
+match any of the 18 cohort CASE branches in the classifier. See the
+explainer below for the data-model flow.
+
+## What is `total_target_permits`?
+
+`total_target_permits` is the count of buyer-targeted commercial,
+multifamily, and qualifying-ADU permits for this jurisdiction. It is a
+**lifetime accumulation** — no time window applied — of permits matching
+PermitCore's matview criteria:
+
+- `work_class` in (`commercial`, `mixed`, `industrial`), **OR**
+- ≥ 5 residential units, **OR**
+- explicit multifamily flag, **OR**
+- qualifying ADU
+
+Two different totals coexist for each metro:
+
+| Total | NYC value | Source |
+| --- | --- | --- |
+| Full silver permit table | ~7.63M | All permits indexed; all work types |
+| `total_target_permits` (matview slice) | ~3.22M | Buyer-targeted subset |
+
+The data-model flow:
+
+```
+Silver permits table (NYC: ~7.63M; all types, all time)
+      │
+      ▼  matview WHERE filter
+Buyer-targeted slice (NYC: ~3.22M; = total_target_permits)
+      │
+      ▼  cohort CASE classification
+18 canonical cohorts  +  1 NULL bucket (implicit)
+      │
+      ▼  aggregation per request
+cohort_distribution response field
+```
+
+The relationship in math: `sum(cohort_distribution) + null_segment =
+total_target_permits`. The NULL bucket isn't exposed in the response
+shape; subtract the cohort sum from the total if you need to know its
+size for a given jurisdiction.
+
+When **not** to use `total_target_permits`:
+
+- For a metro's *full* permit count across all work types (residential
+  single-family, miscellaneous trades, etc.), the matview total
+  understates by ~57% on NYC and roughly similar on other large metros.
+  Use the metro page on permitcore.io for the lifetime silver count.
+- For *time-bounded* counts (e.g., "permits issued in 2025"), this
+  endpoint is the wrong tool — use `/v1/permits` with `since=` /
+  `until=` filters when it ships (Bucket 2).
 
 ## Errors
 

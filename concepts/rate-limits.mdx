@@ -13,13 +13,16 @@ this early launch window.
 
 ## Tier matrix (future state)
 
-| Tier | Monthly requests | Cohorts | History | Webhooks |
-|------|------------------|---------|---------|----------|
-| Free | 1,000 | 6 (subset) | 30 days | — |
-| Hobby ($49/mo) | 10,000 | All 18 | 90 days | 1 |
-| Builder ($149/mo) | 100,000 | All 18 | Full | 5 |
-| Growth ($299/mo) | 500,000 | All 18 | Full | 25 |
+| Tier | Request quota | Cohorts | History | Webhooks |
+|------|---------------|---------|---------|----------|
+| Free | 1,000 / day | 6 (subset) | 30 days | — |
+| Hobby ($49/mo) | 10,000 / month | All 18 | 90 days | 1 |
+| Builder ($149/mo) | 100,000 / month | All 18 | Full | 5 |
+| Growth ($299/mo) | 500,000 / month | All 18 | Full | 25 |
 | Pro | Custom | All 18 + custom | Full | Unlimited |
+
+Free tier resets daily at 00:00 UTC. Paid tiers reset monthly on the
+first of each month UTC.
 
 See <a href="https://permitcore.io/pricing">permitcore.io/pricing</a> for the full breakdown.
 
@@ -35,9 +38,10 @@ Content-Type: application/json
 {
   "error": {
     "code": "rate_limited",
-    "message": "Rate limit exceeded. Quota resets monthly.",
+    "message": "Rate limit exceeded. Quota resets at the indicated time.",
     "detail": {
-      "limit_per_month": 100000,
+      "period": "month",
+      "limit": 100000,
       "used": 100000,
       "resets_at": "2026-06-01T00:00:00Z"
     }
@@ -84,7 +88,7 @@ Bucket 2 (~3 weeks) introduces:
 
 - **Per-endpoint burst limits** (e.g., 30 req/sec sustained for permits
   endpoint)
-- **Per-tier monthly request ceilings** (matrix above)
+- **Per-tier request ceilings** (matrix above — Free is daily, paid tiers monthly)
 - **Cohort-coverage gating** (Free tier capped to 6 subset cohorts)
 - **Webhook event quotas** (paid tiers only)
 
