@@ -45,7 +45,7 @@
   },
   "analytics": {
     "posthog": {
-      "apiKey": "phc_REPLACE_WITH_NEXT_PUBLIC_POSTHOG_KEY_FROM_VERCEL",
+      "apiKey": "phc_CTFpdUtG8UNwSDTZ7HasZN6ysB9KhSTwriteQnAwtDKs",
       "apiHost": "https://us.i.posthog.com"
     }
   },
