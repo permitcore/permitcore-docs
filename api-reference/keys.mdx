@@ -1,0 +1,90 @@
+---
+title: "API key management"
+description: "Programmatic key creation, listing, revocation, + per-key usage telemetry. Coming with the Bucket 2 data-pipeline release (~3 weeks)."
+---
+
+<Note>
+**Status:** programmatic API key endpoints ship with the Bucket 2
+data-pipeline release (~3 weeks). Until then, manage keys via your
+<a href="https://permitcore.io/account/api-keys">account dashboard</a> —
+keys are issued on signup and rotated via dashboard UI.
+</Note>
+
+## Draft endpoint catalog
+
+### `POST /v1/keys` — Create a key
+
+```json
+{
+  "name": "production-server",
+  "scopes": ["query"]
+}
+```
+
+Returns:
+
+```json
+{
+  "key": "pk_live_a1b2c3d4...",
+  "key_prefix": "pk_live_a1b2",
+  "name": "production-server",
+  "scopes": ["query"],
+  "created_at": "2026-05-24T18:00:00Z"
+}
+```
+
+The full `key` value is returned **once at creation**. Store it
+immediately; we don't display it again.
+
+### `GET /v1/keys` — List your keys
+
+Returns metadata for all keys owned by the calling user:
+
+```json
+{
+  "keys": [
+    {
+      "key_prefix": "pk_live_a1b2",
+      "name": "production-server",
+      "scopes": ["query"],
+      "created_at": "2026-05-24T18:00:00Z",
+      "last_used_at": "2026-05-24T20:14:00Z"
+    }
+  ]
+}
+```
+
+### `DELETE /v1/keys/{prefix}` — Revoke a key
+
+Revokes the key. Subsequent requests with this key return `401`.
+
+### `GET /v1/keys/{prefix}/usage` — Per-key usage
+
+```json
+{
+  "key_prefix": "pk_live_a1b2",
+  "period": "2026-05",
+  "request_count": 4823,
+  "quota": 100000,
+  "percent_used": 4.823,
+  "throttled_24h": 0,
+  "recent_requests": [
+    { "timestamp": "2026-05-24T20:14:00Z", "endpoint": "/v1/jurisdictions/nyc/cohorts/distribution", "status": 200 }
+  ]
+}
+```
+
+## Scopes (future)
+
+| Scope | Grants |
+|-------|--------|
+| `query` | Read access to all `GET` endpoints on this account's tier |
+| `admin` | Manage keys (`POST` / `DELETE` on `/v1/keys`); usually not needed for application keys |
+
+## Until then
+
+- Sign up at <a href="https://permitcore.io/signup">permitcore.io/signup</a>
+- Visit <a href="https://permitcore.io/account/api-keys">Account → API Keys</a>
+  to view your active keys
+- Email <a href="mailto:kian@permitcore.io">kian@permitcore.io</a> for
+  key rotation or scope changes

@@ -1,0 +1,70 @@
+---
+title: "Permits (listing endpoint)"
+description: "Paginate permit rows by jurisdiction × cohort × date. Coming with the Bucket 2 data-pipeline release (~3 weeks)."
+---
+
+<Note>
+**Status:** this endpoint ships with the Bucket 2 data-pipeline release
+(~3 weeks). Contract preview below; treat as draft until ship date.
+For aggregate cohort counts today, see
+[cohort distribution](/api-reference/jurisdictions/cohort-distribution).
+</Note>
+
+## Draft contract
+
+`GET /v1/permits?jurisdiction=&cohort=&since=&until=&limit=&cursor=`
+
+Returns paginated permit rows filtered by jurisdiction + cohort + date range.
+
+### Query parameters (preview)
+
+| Param | Type | Notes |
+|-------|------|-------|
+| `jurisdiction` | string (slug) | Required. Single metro slug |
+| `cohort` | string (slug) | Optional. One of the 18 canonical cohorts; omit for all cohorts |
+| `since` | ISO 8601 date | Optional. Lower bound for `issued_date` |
+| `until` | ISO 8601 date | Optional. Upper bound for `issued_date` |
+| `limit` | integer | Optional. Page size, default 100, max 1000 |
+| `cursor` | string | Optional. Opaque cursor from prior page's `next_cursor` |
+
+### Response shape (preview)
+
+```json
+{
+  "permits": [
+    {
+      "permit_id": "NYC-2026-441820",
+      "jurisdiction_slug": "nyc",
+      "cohort": "commercial_alteration",
+      "issued_date": "2026-05-21",
+      "address": "210 Atlantic Ave, Brooklyn, NY",
+      "borough": "Brooklyn",
+      "contractor": "Skyline Roofing Group LLC",
+      "valuation": 3400000,
+      "roof_area_sqft": 22800,
+      "ibc_occupancy": "Business (B)",
+      "pluto_joined": true,
+      "dq_flags": []
+    }
+  ],
+  "next_cursor": "eyJpZCI6Im5lcjJh..."
+}
+```
+
+## Quotas + per-tier filters
+
+- **Free tier** will be capped to a 6-cohort subset; `cohort` queries
+  outside the subset will 403 with `insufficient_scope`
+- **Hobby tier+** unlocks all 18 cohorts
+- **Webhook stream** for real-time push delivery ships alongside this
+  endpoint (paid tiers only)
+
+See [Rate limits](/concepts/rate-limits) for the full tier matrix.
+
+## Until then
+
+For real-time permit access today, use the
+<a href="https://permitcore.io/sandbox">free in-browser sandbox</a> —
+client-side DuckDB-WASM queries against the last 10 days of permits across
+22 MAPPED metros. No signup, no API key, no rate limit (it's all
+client-side).

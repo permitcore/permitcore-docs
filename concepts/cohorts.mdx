@@ -1,0 +1,72 @@
+---
+title: "Cohorts"
+description: "The canonical 18-cohort taxonomy that PermitCore's pipeline classifies every permit into."
+---
+
+Every permit ingested by PermitCore is classified into one of **18 canonical
+cohorts**. Cohorts are the primary axis for slicing the dataset — by use
+type (commercial / residential / industrial / civic) crossed with scope
+(new construction / alteration / demolition / MEP / etc.).
+
+## The 18 canonical cohorts
+
+| Slug | Display name | What it covers |
+|------|--------------|----------------|
+| `adu_qualifying` | ADU-Qualifying Construction | Accessory dwelling units — backyard cottages, garage conversions, qualifying ADU builds |
+| `civic` | Civic Construction | Public buildings — schools, libraries, transit, government facilities |
+| `commercial_alteration` | Commercial Alteration | Tenant improvements, additions, alterations, AND commercial roofing/envelope work |
+| `commercial_demolition` | Commercial Demolition | Commercial teardowns + structural demolition + abatement |
+| `commercial_mep` | Commercial MEP | Commercial mechanical, electrical, plumbing systems |
+| `commercial_new` | Commercial New Construction | Ground-up commercial — offices, retail, mixed-use |
+| `commercial_pool` | Commercial Pool Construction | Commercial pools — hotels, gyms, condo amenities, apartments |
+| `commercial_shell_only` | Commercial Shell-Only Construction | Building shells without tenant fit-out — speculative + warm-shell builds |
+| `commercial_signage` | Commercial Signage Permits | Wall-mounted, monument, illuminated signs at commercial properties |
+| `industrial_new` | Industrial New Construction | Warehouses, distribution, manufacturing, data centers |
+| `multifamily_alteration` | Multifamily Alteration | Apartment + condo alterations, renovations, envelope work |
+| `multifamily_new` | Multifamily New Construction | Ground-up apartments + condos — 5+ units, R-2 occupancy |
+| `residential_alteration` | Residential Alteration | Single-family renovations, additions, kitchen/bath remodels |
+| `residential_demolition` | Residential Demolition | Single-family teardowns + accessory-structure demolition |
+| `residential_foundation_only` | Residential Foundation-Only | Foundation-only filings — early-phase residential construction |
+| `residential_mep` | Residential MEP | Residential mechanical, electrical, plumbing — incl. solar PV |
+| `residential_new_sf` | Residential New (Single-Family) | Ground-up single-family homes — detached residential construction |
+| `temporary_construction_support` | Temporary Construction Support | Scaffolding, hoists, sidewalk sheds, temporary fencing |
+
+## What's NOT split out today
+
+The current cohort taxonomy intentionally **rolls up** several specialty
+categories that other systems sometimes split:
+
+- **Roofing** — folded into `commercial_alteration` or `residential_alteration` depending on the property
+- **HVAC** — folded into `commercial_mep` or `residential_mep`
+- **Solar** — folded into `residential_mep` (residential solar PV) or `commercial_alteration` / `commercial_mep` (commercial solar)
+- **Fire-protection / sprinkler** — folded into `commercial_mep` / `residential_mep`
+- **Data center** — folded into `industrial_new`
+
+These are on the data-pipeline roadmap as future sub-cohort splits. Until
+then, query the rolled-up parent and filter downstream by permit-type
+keywords.
+
+## Cohort assignment
+
+Cohort tags are emitted by PermitCore's LLM-1 classifier per permit. Tags
+are deterministic per permit (same input → same cohort), explainable
+(reasoning surfaced via the future `/v1/permits/{id}/explanation` endpoint),
+and improve over time as the classifier is fine-tuned on operator-validated
+labels.
+
+Every permit has exactly one cohort. No multi-label.
+
+## Querying by cohort
+
+The cohort distribution endpoint surfaces per-jurisdiction counts:
+
+```bash
+curl "https://api.permitcore.io/v1/jurisdictions/nyc/cohorts/distribution" \
+  -H "Authorization: Bearer $PERMITCORE_API_KEY"
+```
+
+See [Cohort distribution endpoint →](/api-reference/jurisdictions/cohort-distribution)
+for the full response shape.
+
+The permit-listing endpoint (`/v1/permits?cohort=…&jurisdiction=…`,
+shipping ~3 weeks) lets you paginate the rows backing each count.

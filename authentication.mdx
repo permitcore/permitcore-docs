@@ -1,0 +1,98 @@
+---
+title: "Authentication"
+description: "Bearer-token auth via API key. Key formats, header conventions, security guidance."
+---
+
+PermitCore's API uses **bearer-token authentication**. Every request must
+include an `Authorization: Bearer <your-key>` header.
+
+## Key format
+
+API keys are opaque strings prefixed with `pk_` (production) or `pk_test_`
+(future test mode). Treat the entire string as secret.
+
+```
+pk_live_a1b2c3d4e5f6...   ← live key, never commit
+pk_test_a1b2c3d4e5f6...   ← test key (future), never commit
+```
+
+## Header convention
+
+```http
+Authorization: Bearer pk_live_a1b2c3d4e5f6...
+Accept: application/json
+```
+
+The `Accept` header is recommended but optional — responses default to JSON.
+
+## Where to get a key
+
+1. Sign up at <a href="https://permitcore.io/signup">permitcore.io/signup</a>
+2. After magic-link sign-in, visit <a href="https://permitcore.io/account/api-keys">Account → API Keys</a>
+3. Your active key is shown once at creation — copy it then; we don't store
+   it in plain text after the initial display
+
+<Note>
+**Bucket 2 status:** keys are issued on signup today. Programmatic
+creation + rotation endpoints (`POST /v1/keys`, `DELETE /v1/keys/{prefix}`)
+ship in ~3 weeks.
+</Note>
+
+## Security best practices
+
+- **Never commit keys to version control.** Use environment variables.
+- **Never embed keys in client-side JS.** Server-to-server only.
+- **Rotate keys quarterly** or immediately if exposure is suspected.
+- **Use one key per environment** (production, staging, local). Easier to
+  scope an incident if one is compromised.
+- **Restrict by IP** when programmatic key management ships (Bucket 2).
+
+## Error responses for auth failures
+
+| HTTP | Error code | When |
+|------|------------|------|
+| `401` | `missing_credentials` | No `Authorization` header sent |
+| `401` | `invalid_token` | Header sent but key is malformed / revoked / unknown |
+| `403` | `insufficient_scope` | Key is valid but lacks scope for this endpoint |
+
+See [Errors](/errors) for full error response shape + retry guidance.
+
+## Example: handling auth in code
+
+<CodeGroup>
+
+```js Node.js
+async function permitcore(path) {
+  const res = await fetch(`https://api.permitcore.io${path}`, {
+    headers: {
+      Authorization: `Bearer ${process.env.PERMITCORE_API_KEY}`,
+      Accept: "application/json",
+    },
+  });
+  if (res.status === 401) throw new Error("Auth failed — check PERMITCORE_API_KEY");
+  if (res.status === 403) throw new Error("Forbidden — key lacks scope for " + path);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+```
+
+```python Python
+import os, httpx
+
+def permitcore(path: str):
+    r = httpx.get(
+        f"https://api.permitcore.io{path}",
+        headers={
+            "Authorization": f"Bearer {os.environ['PERMITCORE_API_KEY']}",
+            "Accept": "application/json",
+        },
+    )
+    if r.status_code == 401:
+        raise SystemExit("Auth failed — check PERMITCORE_API_KEY")
+    if r.status_code == 403:
+        raise SystemExit(f"Forbidden — key lacks scope for {path}")
+    r.raise_for_status()
+    return r.json()
+```
+
+</CodeGroup>

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "PermitCore",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://permitcore.io"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#1b4dd1",
+    "light": "#7aa0ff",
+    "dark": "#0a0a0a",
+    "anchors": {
+      "from": "#1b4dd1",
+      "to": "#7aa0ff"
+    },
+    "background": {
+      "light": "#fafafb",
+      "dark": "#0e1218"
+    }
+  },
+  "font": {
+    "headings": { "family": "Geist", "weight": 600 },
+    "body": { "family": "Geist", "weight": 400 }
+  },
+  "topbarCtaButton": {
+    "name": "Get API Key",
+    "url": "https://permitcore.io/signup"
+  },
+  "topbarLinks": [
+    { "name": "Sandbox", "url": "https://permitcore.io/sandbox" },
+    { "name": "Pricing", "url": "https://permitcore.io/pricing" }
+  ],
+  "search": {
+    "prompt": "Search the docs…"
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true,
+    "raiseIssue": true
+  },
+  "footerSocials": {
+    "website": "https://permitcore.io"
+  },
+  "analytics": {
+    "posthog": {
+      "apiKey": "phc_REPLACE_WITH_NEXT_PUBLIC_POSTHOG_KEY_FROM_VERCEL",
+      "apiHost": "https://us.i.posthog.com"
+    }
+  },
+  "navigation": [
+    {
+      "group": "Introduction",
+      "pages": ["introduction", "quickstart", "authentication"]
+    },
+    {
+      "group": "Concepts",
+      "pages": [
+        "concepts/jurisdictions",
+        "concepts/cohorts",
+        "concepts/data-freshness",
+        "concepts/rate-limits"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/introduction",
+        "api-reference/jurisdictions/overview",
+        "api-reference/jurisdictions/cohort-distribution",
+        "api-reference/permits",
+        "api-reference/keys"
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": ["errors", "changelog"]
+    }
+  ]
+}

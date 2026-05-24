@@ -1,0 +1,48 @@
+---
+title: "Welcome to PermitCore"
+description: "Daily-refreshed US building-permit data with field-level provenance and a canonical 18-cohort taxonomy."
+---
+
+PermitCore is a building-permit data platform. The API ships **daily-refreshed**
+permits across **22 mapped US metros** today, with cohort classification, parcel-joined
+geometry where available, and field-level data-quality flags inline on every row.
+
+This documentation covers the public **`v1` HTTP API** at `https://api.permitcore.io`.
+
+## What's live today
+
+<CardGroup cols={2}>
+  <Card title="Cohort distribution" icon="chart-pie" href="/api-reference/jurisdictions/cohort-distribution">
+    `GET /v1/jurisdictions/{slug}/cohorts/distribution` — per-jurisdiction
+    breakdown across the canonical 18 cohorts. Cached 1 hour upstream.
+  </Card>
+  <Card title="Free sandbox" icon="flask" href="https://permitcore.io/sandbox">
+    Search permits across metros in your browser. Client-side DuckDB-WASM;
+    no signup required.
+  </Card>
+</CardGroup>
+
+## What's shipping next
+
+<CardGroup cols={2}>
+  <Card title="Permits endpoint" icon="database">
+    `GET /v1/permits?jurisdiction=&cohort=&since=…` — paginated permit
+    rows. ETA ~3 weeks (Bucket 2).
+  </Card>
+  <Card title="API key management" icon="key">
+    Programmatic key creation + rotation. ETA ~3 weeks (Bucket 2). Until
+    then, manage keys via your <a href="https://permitcore.io/account/api-keys">dashboard</a>.
+  </Card>
+</CardGroup>
+
+## Conventions in this doc
+
+- **Base URL:** `https://api.permitcore.io`
+- **Auth:** `Authorization: Bearer <your-key>` header on every request
+- **Format:** JSON in, JSON out (`Accept: application/json`)
+- **Versioning:** `/v1/...` path prefix; breaking changes ship as `/v2`
+- **Slug conventions:** jurisdictions use lowercase URL-safe slugs (`nyc`,
+  `la`, `houston`); cohorts use canonical snake_case keys
+  (`commercial_alteration`, `multifamily_new`)
+
+Five-minute path from zero to first request: [Quickstart →](/quickstart)

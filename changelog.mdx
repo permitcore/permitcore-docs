@@ -1,0 +1,62 @@
+---
+title: "Changelog"
+description: "Versioned release notes for the PermitCore API + docs site."
+---
+
+## 2026-05-24 — `v1` public launch
+
+First public release.
+
+### Live now
+
+- **`GET /v1/jurisdictions/{slug}/cohorts/distribution`** — per-jurisdiction
+  cohort breakdown across the canonical 18 cohorts. Cached 1 hour upstream
+  (`Cache-Control: max-age=3600`).
+- **22 MAPPED metros** covering the top US permit-volume markets — NYC,
+  LA, Chicago, Houston, Phoenix, SF, Austin, Seattle, Boston, Atlanta,
+  Miami, DC, Dallas, Philadelphia, San Diego, Charlotte, Portland,
+  Nashville, Las Vegas, Columbus, Indianapolis, Fort Worth, San Antonio.
+  Three additional metros (Denver, Oklahoma City, Jacksonville) in
+  DEPLOY-PENDING status; ingest activates Q3 2026.
+- **18 canonical cohorts** classified per permit via PermitCore's LLM-1
+  classifier. See [Concepts → Cohorts](/concepts/cohorts) for the full
+  taxonomy + what each cohort covers.
+- **Free in-browser sandbox** at <a href="https://permitcore.io/sandbox">
+  permitcore.io/sandbox</a> — client-side DuckDB-WASM queries against the
+  last 10 days of permits across 22 metros. No signup required.
+- **Self-serve signup + tier subscriptions** via Stripe Checkout.
+  Free / Hobby ($49/mo) / Builder ($149/mo) / Growth ($299/mo) tiers.
+
+### Coming ~3 weeks (Bucket 2)
+
+- **`GET /v1/permits`** — paginated permit-listing endpoint with cohort +
+  jurisdiction + date filters. Returns full row data with field-level DQ
+  flags.
+- **`POST /v1/keys` + `GET /v1/keys` + `DELETE /v1/keys/{prefix}`** —
+  programmatic API key management.
+- **`GET /v1/keys/{prefix}/usage`** — per-key request counters + recent
+  invocation log.
+- **Tier-aware rate limits.** Per-tier monthly request quotas + per-tier
+  cohort coverage. Currently uniform at 100K req/mo across all keys
+  during the early-launch window.
+- **OpenAPI 3.1 spec** exposed at `https://api.permitcore.io/openapi.json`.
+- **Webhook stream** for real-time permit-filing push delivery (paid tiers).
+
+### Coming later (Bucket 3+)
+
+- Additional cohort splits (commercial_roofing, residential_solar,
+  data_center) — currently rolled into commercial_alteration / residential_mep /
+  industrial_new respectively.
+- Snowflake + BigQuery share endpoints for Pro / Enterprise tiers.
+- MCP server (Claude Desktop, Cursor, Cline integration) for AI-agent use.
+
+### Deprecations
+
+None yet — this is the initial `v1` release.
+
+## How to track changes
+
+- This page is the canonical source.
+- Major changes are also surfaced in the in-product `/account` dashboard.
+- Breaking changes are versioned (`/v2`); the prior major version
+  receives security patches but no new features.

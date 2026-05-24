@@ -1,0 +1,59 @@
+---
+title: "Jurisdictions resource"
+description: "Overview of jurisdiction-scoped endpoints. Slug conventions, status field, listing endpoint contract."
+---
+
+The **jurisdictions resource** scopes data by metro area. Every endpoint
+below takes a lowercase URL-safe `slug` (`nyc`, `la`, `houston`) as the
+primary path parameter.
+
+## Active endpoints
+
+| Method | Path | Status |
+|--------|------|--------|
+| `GET` | `/v1/jurisdictions/{slug}/cohorts/distribution` | **Live** |
+| `GET` | `/v1/jurisdictions` (list all jurisdictions) | Coming with Bucket 2 |
+| `GET` | `/v1/jurisdictions/{slug}` (metro detail + totals) | Coming with Bucket 2 |
+
+## Slug conventions
+
+- All lowercase
+- Hyphens for multi-word metros (none today; reserved for future expansion)
+- No accents, no special characters
+- Examples: `nyc`, `la`, `dc`, `sf`, `fortworth`, `sanantonio`
+
+A slug that returns `404` from the cohort distribution endpoint means the
+metro is either DEPLOY-PENDING (in production-ingest queue) or not in
+PermitCore's coverage map.
+
+See [Concepts → Jurisdictions](/concepts/jurisdictions) for the full
+coverage table + status meanings.
+
+## Future: list endpoint contract preview
+
+Shipping in Bucket 2, the listing endpoint will respond:
+
+```json
+{
+  "jurisdictions": [
+    {
+      "slug": "nyc",
+      "display_name": "New York City, NY",
+      "status": "MAPPED",
+      "total_target_permits": 2998000,
+      "as_of_utc": "2026-05-24T02:00:00Z"
+    },
+    {
+      "slug": "denver",
+      "display_name": "Denver, CO",
+      "status": "DEPLOY-PENDING",
+      "total_target_permits": null,
+      "as_of_utc": null
+    }
+  ]
+}
+```
+
+Until then, the canonical metro list lives on
+<a href="https://permitcore.io">permitcore.io</a>'s homepage (metro tiles)
+and in the URL space of the cohort distribution endpoint.

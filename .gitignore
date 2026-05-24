@@ -1,0 +1,11 @@
+# Mintlify CLI artifacts
+.mintlify/
+node_modules/
+.next/
+.vercel/
+
+# OS / editor
+.DS_Store
+*.log
+.idea/
+.vscode/

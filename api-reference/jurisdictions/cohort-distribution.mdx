@@ -1,0 +1,136 @@
+---
+title: "GET /v1/jurisdictions/{slug}/cohorts/distribution"
+description: "Per-jurisdiction breakdown across the canonical 18 cohorts. Cached 1 hour."
+api: "GET https://api.permitcore.io/v1/jurisdictions/{slug}/cohorts/distribution"
+---
+
+Returns the canonical 18-cohort permit distribution for a single jurisdiction.
+
+The response is **always 18 keys** — cohorts with no permits are zero-filled.
+Counts reflect the rolling-window total permits classified to each cohort
+for that jurisdiction as of the `as_of_utc` timestamp.
+
+## Authentication
+
+`Authorization: Bearer <your-api-key>` — see [Authentication](/authentication).
+
+## Path parameters
+
+<ParamField path="slug" type="string" required>
+  Lowercase jurisdiction slug. Examples: `nyc`, `la`, `houston`, `dc`. See
+  [Concepts → Jurisdictions](/concepts/jurisdictions) for the coverage list.
+  Returns `404` for unknown slugs and for slugs in DEPLOY-PENDING status.
+</ParamField>
+
+## Response
+
+<ResponseField name="jurisdiction_slug" type="string">
+  Echoes the path parameter for round-trip clarity.
+</ResponseField>
+<ResponseField name="jurisdiction_display_name" type="string">
+  Human-readable metro name, e.g. `"New York City, NY"`.
+</ResponseField>
+<ResponseField name="as_of_utc" type="string">
+  ISO 8601 UTC timestamp marking when the underlying data was last computed.
+</ResponseField>
+<ResponseField name="total_target_permits" type="number">
+  Total permits in the rolling window across all 18 cohorts. Equal to the
+  sum of `cohort_distribution` values.
+</ResponseField>
+<ResponseField name="cohort_distribution" type="object">
+  Map of `{ cohort_slug: integer_count }` for all 18 canonical cohorts.
+  Always 18 keys; zero-filled when absent.
+</ResponseField>
+
+## Example request
+
+<CodeGroup>
+
+```bash curl
+curl https://api.permitcore.io/v1/jurisdictions/nyc/cohorts/distribution \
+  -H "Authorization: Bearer $PERMITCORE_API_KEY" \
+  -H "Accept: application/json"
+```
+
+```js Node.js
+const res = await fetch(
+  "https://api.permitcore.io/v1/jurisdictions/nyc/cohorts/distribution",
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.PERMITCORE_API_KEY}`,
+      Accept: "application/json",
+    },
+  },
+);
+const data = await res.json();
+```
+
+```python Python
+import os, httpx
+
+r = httpx.get(
+    "https://api.permitcore.io/v1/jurisdictions/nyc/cohorts/distribution",
+    headers={"Authorization": f"Bearer {os.environ['PERMITCORE_API_KEY']}"},
+)
+r.raise_for_status()
+data = r.json()
+```
+
+</CodeGroup>
+
+## Example response
+
+```json
+{
+  "jurisdiction_slug": "nyc",
+  "jurisdiction_display_name": "New York City, NY",
+  "as_of_utc": "2026-05-24T02:00:00Z",
+  "total_target_permits": 2998000,
+  "cohort_distribution": {
+    "adu_qualifying": 380,
+    "civic": 1820,
+    "commercial_alteration": 119800,
+    "commercial_demolition": 50100,
+    "commercial_mep": 27200,
+    "commercial_new": 38400,
+    "commercial_pool": 3920,
+    "commercial_shell_only": 1200,
+    "commercial_signage": 18900,
+    "industrial_new": 2840,
+    "multifamily_alteration": 2474522,
+    "multifamily_new": 73200,
+    "residential_alteration": 14820,
+    "residential_demolition": 9840,
+    "residential_foundation_only": 248,
+    "residential_mep": 8400,
+    "residential_new_sf": 6240,
+    "temporary_construction_support": 146420
+  }
+}
+```
+
+## Errors
+
+| HTTP | Code | Cause |
+|------|------|-------|
+| `401` | `missing_credentials` | No `Authorization` header |
+| `401` | `invalid_token` | Key malformed / revoked |
+| `403` | `insufficient_scope` | Key lacks `query` scope |
+| `404` | `http_404` | Unknown slug OR DEPLOY-PENDING metro |
+| `429` | `rate_limited` | Monthly quota exhausted (see [Rate limits](/concepts/rate-limits)) |
+| `500` | `internal_error` | Upstream pipeline issue; retry after backoff |
+
+## Caching
+
+The upstream API responds with `Cache-Control: max-age=3600`. The
+PermitCore site consumes this endpoint via Next.js ISR with
+`revalidate: 3600`, so site-rendered pages lag the underlying pipeline
+by **at most 1 hour** beyond the pipeline's own daily refresh.
+
+For your own caching, the 1-hour value is a safe upper bound — pipeline
+data only changes once per 24 hours per metro.
+
+## Related
+
+- [Concepts → Cohorts](/concepts/cohorts) — what each cohort covers
+- [Permits endpoint](/api-reference/permits) — paginate the rows behind each count (~3 weeks)

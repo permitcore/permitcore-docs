@@ -1,0 +1,90 @@
+---
+title: "API reference overview"
+description: "Base URL, versioning, auth conventions, and the endpoint catalog."
+---
+
+## Base URL
+
+```
+https://api.permitcore.io
+```
+
+All endpoints are versioned under `/v1`. Breaking changes ship as `/v2` —
+no surprise mutations.
+
+## Auth
+
+Every request must include:
+
+```http
+Authorization: Bearer <your-api-key>
+```
+
+See [Authentication](/authentication) for key formats + security guidance.
+
+## Response format
+
+JSON in, JSON out. All responses use UTF-8. Timestamps are ISO 8601 with
+UTC offset (`Z`). Numeric IDs are strings to avoid 53-bit precision loss
+in JavaScript.
+
+```json
+{
+  "as_of_utc": "2026-05-24T02:00:00Z",
+  "total_target_permits": 2998000,
+  "cohort_distribution": { "...": 0 }
+}
+```
+
+## Errors
+
+Every non-2xx response follows this shape:
+
+```json
+{
+  "error": {
+    "code": "missing_credentials",
+    "message": "Missing Authorization: Bearer <key> header.",
+    "detail": null
+  }
+}
+```
+
+See [Errors](/errors) for the full code catalog + retry guidance.
+
+## Endpoint catalog
+
+<CardGroup cols={1}>
+  <Card title="Cohort distribution" icon="chart-pie" href="/api-reference/jurisdictions/cohort-distribution">
+    `GET /v1/jurisdictions/{slug}/cohorts/distribution` — per-jurisdiction
+    breakdown across the canonical 18 cohorts. Cached 1 hour upstream.
+    **Live today.**
+  </Card>
+  <Card title="Permits (list + filter)" icon="database" href="/api-reference/permits">
+    `GET /v1/permits?jurisdiction=&cohort=&since=…` — paginated permit
+    rows with field-level DQ flags. **Coming ~3 weeks (Bucket 2).**
+  </Card>
+  <Card title="Jurisdiction overview" icon="map" href="/api-reference/jurisdictions/overview">
+    Resource overview + jurisdiction list endpoint contracts.
+  </Card>
+  <Card title="API key management" icon="key" href="/api-reference/keys">
+    `POST /v1/keys`, `DELETE /v1/keys/{prefix}`, `GET /v1/keys/{prefix}/usage`
+    — programmatic key lifecycle. **Coming ~3 weeks (Bucket 2).**
+  </Card>
+</CardGroup>
+
+## OpenAPI specification
+
+The OpenAPI 3.1 schema is exposed at `https://api.permitcore.io/openapi.json`
+(coming with the Bucket 2 release). Until then, this reference is the
+canonical source for request/response shapes.
+
+## Status page + SLA
+
+- **Free + Hobby:** community support via the in-product chat
+- **Builder:** 48-hour email response SLA
+- **Growth:** priority support + Slack channel
+- **Pro:** named CSM + 99.9% uptime SLA
+
+For incidents, watch the [changelog](/changelog) — outage notes land
+there in real time.

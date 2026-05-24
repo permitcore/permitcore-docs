@@ -1,0 +1,94 @@
+---
+title: "Errors"
+description: "Canonical error codes, response shape, and retry guidance for every non-2xx response."
+---
+
+PermitCore returns a uniform error envelope for every non-2xx response:
+
+```json
+{
+  "error": {
+    "code": "missing_credentials",
+    "message": "Missing Authorization: Bearer <key> header.",
+    "detail": null
+  }
+}
+```
+
+`detail` may be `null` or an object with structured fields specific to the
+error code (e.g., `rate_limited` returns `{ limit_per_month, used, resets_at }`).
+
+## Error catalog
+
+### 401 Unauthorized
+
+| Code | Cause | Retry? |
+|------|-------|--------|
+| `missing_credentials` | `Authorization` header absent | No — fix client and resubmit |
+| `invalid_token` | Key is malformed, revoked, or unknown | No — rotate key via dashboard |
+| `expired_token` | Magic-link signin token expired (10 min default) | No — request a new sign-in link |
+
+### 403 Forbidden
+
+| Code | Cause | Retry? |
+|------|-------|--------|
+| `insufficient_scope` | Key is valid but lacks the scope required for this endpoint | No — request a key with the needed scope |
+| `tier_restricted` | Endpoint or query parameter requires a higher subscription tier | No — upgrade tier or remove parameter |
+
+### 404 Not Found
+
+| Code | Cause | Retry? |
+|------|-------|--------|
+| `http_404` | Path doesn't exist OR jurisdiction is DEPLOY-PENDING | No — verify slug + endpoint |
+
+### 429 Too Many Requests
+
+| Code | Cause | Retry? |
+|------|-------|--------|
+| `rate_limited` | Quota exhausted | Yes — respect `Retry-After` header |
+| `burst_limited` | Per-second burst threshold exceeded (future, Bucket 2) | Yes — exponential backoff |
+
+When `Retry-After` is large (multiple hours), the quota has been exhausted
+for the period. Bring the key up a tier or wait for the period to reset
+(monthly quotas reset on the first of each month UTC).
+
+### 5xx Server errors
+
+| HTTP | Code | Cause | Retry? |
+|------|------|-------|--------|
+| `500` | `internal_error` | Unexpected pipeline issue | Yes — exponential backoff, alert oncall after 3 retries |
+| `502` | `upstream_gateway` | API gateway can't reach origin | Yes — exponential backoff |
+| `503` | `service_unavailable` | Origin marked unhealthy | Yes — exponential backoff |
+| `504` | `gateway_timeout` | Upstream took too long | Yes — exponential backoff |
+
+## Retry guidance
+
+```js Node.js
+async function withRetries(fn, maxAttempts = 4) {
+  let lastErr;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (!err.retryable || attempt === maxAttempts) throw err;
+      const delay = Math.min(2 ** attempt * 1000, 30000);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
+```
+
+Retryable status codes: `429` (respect `Retry-After`), `500`, `502`, `503`,
+`504`. All 4xx codes other than `429` are application errors and should NOT
+be retried — fix the request and resubmit.
+
+## Diagnosing in production
+
+- Every response includes a `x-permitcore-request-id` header (UUID).
+  Include it in any support ticket — we can trace per-request.
+- Vercel deploy logs surface `[cohort-distribution] <slug>: <error_type>`
+  for any caching layer failures.
+- For programmatic monitoring, the future `/v1/keys/{prefix}/usage`
+  endpoint includes a `recent_requests` array with per-request status.

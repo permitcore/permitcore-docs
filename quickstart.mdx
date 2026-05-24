@@ -1,0 +1,120 @@
+---
+title: "Quickstart"
+description: "Sign up, grab a key, make your first request. Five minutes."
+---
+
+## 1. Sign up for an API key
+
+Magic-link signup at <a href="https://permitcore.io/signup">permitcore.io/signup</a>.
+No credit card required for the free tier.
+
+After signing in, your API key lives at <a href="https://permitcore.io/account/api-keys">Account → API Keys</a>.
+
+<Note>
+**Bucket 2 status:** programmatic key generation ships in ~3 weeks. Until
+then, keys are issued on signup and managed via the account dashboard.
+</Note>
+
+## 2. Set up your environment
+
+Export your key. Never commit it — treat it like a database password.
+
+```bash
+export PERMITCORE_API_KEY=pk_...
+```
+
+## 3. Make your first request
+
+Fetch the cohort distribution for New York City:
+
+<CodeGroup>
+
+```bash curl
+curl https://api.permitcore.io/v1/jurisdictions/nyc/cohorts/distribution \
+  -H "Authorization: Bearer $PERMITCORE_API_KEY" \
+  -H "Accept: application/json"
+```
+
+```js Node.js
+const res = await fetch(
+  "https://api.permitcore.io/v1/jurisdictions/nyc/cohorts/distribution",
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.PERMITCORE_API_KEY}`,
+      Accept: "application/json",
+    },
+  },
+);
+const data = await res.json();
+console.log(data.cohort_distribution);
+```
+
+```python Python
+import os
+import httpx
+
+r = httpx.get(
+    "https://api.permitcore.io/v1/jurisdictions/nyc/cohorts/distribution",
+    headers={
+        "Authorization": f"Bearer {os.environ['PERMITCORE_API_KEY']}",
+        "Accept": "application/json",
+    },
+)
+r.raise_for_status()
+print(r.json()["cohort_distribution"])
+```
+
+</CodeGroup>
+
+## 4. Read the response
+
+You'll get back the jurisdiction's canonical 18 cohort breakdown:
+
+```json
+{
+  "jurisdiction_slug": "nyc",
+  "jurisdiction_display_name": "New York City, NY",
+  "as_of_utc": "2026-05-24T02:00:00Z",
+  "total_target_permits": 2998000,
+  "cohort_distribution": {
+    "multifamily_alteration": 2474522,
+    "temporary_construction_support": 146420,
+    "commercial_alteration": 119800,
+    "multifamily_new": 73200,
+    "commercial_demolition": 50100,
+    "commercial_new": 38400,
+    "commercial_mep": 27200,
+    "commercial_signage": 18900,
+    "residential_alteration": 14820,
+    "residential_demolition": 9840,
+    "residential_mep": 8400,
+    "residential_new_sf": 6240,
+    "commercial_pool": 3920,
+    "industrial_new": 2840,
+    "civic": 1820,
+    "commercial_shell_only": 1200,
+    "adu_qualifying": 380,
+    "residential_foundation_only": 248
+  }
+}
+```
+
+All 18 canonical cohorts are always present (zero-filled if a jurisdiction
+has no rows in that cohort).
+
+## 5. What next
+
+<CardGroup cols={2}>
+  <Card title="Cohort taxonomy" icon="layer-group" href="/concepts/cohorts">
+    The canonical 18 cohorts + what each one covers.
+  </Card>
+  <Card title="Authentication" icon="lock" href="/authentication">
+    Key formats, header conventions, security best practices.
+  </Card>
+  <Card title="Rate limits" icon="gauge" href="/concepts/rate-limits">
+    Per-tier quotas + how to handle 429 responses.
+  </Card>
+  <Card title="API reference" icon="book" href="/api-reference/introduction">
+    Full endpoint catalog with request/response shapes.
+  </Card>
+</CardGroup>
