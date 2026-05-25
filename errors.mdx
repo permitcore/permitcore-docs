@@ -26,7 +26,7 @@ error code (e.g., `rate_limited` returns `{ limit_per_month, used, resets_at }`)
 |------|-------|--------|
 | `missing_credentials` | `Authorization` header absent | No — fix client and resubmit |
 | `invalid_token` | Key is malformed, revoked, or unknown | No — rotate key via dashboard |
-| `expired_token` | Magic-link signin token expired (10 min default) | No — request a new sign-in link |
+| `expired_token` | Magic-link sign-in token expired (10 min default) | No — request a new sign-in link |
 
 ### 403 Forbidden
 
