@@ -31,17 +31,22 @@ carries the following headers so your client can self-throttle:
 | `X-RateLimit-Limit-Requests`      | `100000`      | Ceiling for the **currently-binding** quota window. |
 | `X-RateLimit-Remaining-Requests`  | `99997`       | Requests remaining in the binding window before the next 429. |
 | `X-RateLimit-Quota-Kind`          | `monthly`     | Which dimension is binding right now: `daily` or `monthly`. Free is bound by either (1K/month or 100/day) — header reports whichever 429s next. |
-| `X-RateLimit-Reset`               | `2026-06-05`  | UTC midnight of the next quota reset. **See caveat below.** |
+| `X-RateLimit-Reset`               | `2026-06-22`  | When the binding quota next has capacity. Semantics depend on `X-RateLimit-Quota-Kind` — see below. Absent when the binding dimension is **unlimited** (Pro requests, Pro/Enterprise exports). |
 
-### `X-RateLimit-Reset` caveat (known limitation)
+### `X-RateLimit-Reset` semantics (kind-aware)
 
-`X-RateLimit-Reset` is emitted as **next-UTC-midnight unconditionally**,
-regardless of the binding quota kind. This is correct when
-`X-RateLimit-Quota-Kind: daily` (resets at the next UTC midnight) but
-**wrong when `X-RateLimit-Quota-Kind: monthly`** — monthly quotas use a
-trailing-30-day window, not a calendar reset. A fix is in the pipeline's
-active queue (`bl-header-reset-kind-aware`). When it lands, this caveat
-section will be removed and the docs will simplify.
+The reset surface is **interpreted via the `X-RateLimit-Quota-Kind` header**
+(or the 429 body's `quota_kind` field — they always agree):
+
+| `X-RateLimit-Quota-Kind` | `X-RateLimit-Reset` meaning |
+| --- | --- |
+| `daily` | Next UTC midnight — the full daily ceiling restores at once. |
+| `monthly` | The earliest moment usage ages out of the trailing 30-day window. Monthly quotas restore *progressively* as old requests roll off, so the reset timestamp is when at least one slot becomes available, not when the full ceiling does. |
+| (header absent) | The binding dimension is unlimited — there is no reset to surface. |
+
+Branch on `X-RateLimit-Quota-Kind` (or `quota_kind` in the 429 body) if you
+need to display the right narrative to a user. Otherwise the retry
+guidance below works identically for both kinds.
 
 ## 429 response shape (RFC 9457 problem+json)
 
@@ -59,6 +64,7 @@ Content-Type: application/problem+json
   "title": "Monthly request quota exceeded",
   "detail": "You have used 100000 of 100000 requests for the current monthly window.",
   "retry_after_seconds": 3600,
+  "reset_at": "2026-06-22",
   "limit": 100000,
   "quota_kind": "monthly",
   "tier_name": "pro",
@@ -75,7 +81,8 @@ Content-Type: application/problem+json
 | `type` | URI string | **YES** | Stable identifier. Pattern: `https://api.permitcore.io/errors/{daily\|monthly}-{requests\|exports}-quota-exceeded`. Branch your error-handling on this URI, not on `title`/`detail`. |
 | `title` | string | NO — illustrative only | Short human-readable summary. **Not contractual** — prose may change without notice. |
 | `detail` | string | NO — illustrative only | Longer human-readable explanation, often with the binding numbers inlined. **Not contractual.** |
-| `retry_after_seconds` | integer | **YES** | Seconds to wait before the next request is likely to succeed. Equals the `Retry-After` header. |
+| `retry_after_seconds` | integer | **YES** | Seconds to wait before the next request is likely to succeed. Equals the `Retry-After` header. Matches `X-RateLimit-Reset` (kind-aware). |
+| `reset_at` | ISO 8601 date or datetime | Conditional / kind-aware | When the binding quota next has capacity. For `quota_kind: "daily"` the next UTC midnight; for `quota_kind: "monthly"` the earliest moment usage ages out of the trailing 30-day window (monthly quotas restore progressively). **Absent** when the binding dimension is unlimited (Pro requests, Pro/Enterprise exports). The field name is `reset_at` (singular) — there is no `resets_at`. |
 | `limit` | integer | **YES** | The ceiling for the currently-binding quota window — matches `X-RateLimit-Limit-Requests`. |
 | `quota_kind` | `"daily"` \| `"monthly"` | **YES** | Which dimension was binding when the 429 fired. |
 | `tier_name` | string | **YES** | Canonical tier name (`free`, `pro`, `enterprise`). |
@@ -90,14 +97,14 @@ or `legacy_code` (until removed); never on the prose fields.
 
 ## Recommended retry behavior
 
-**Branch on `quota_kind` first** — different binding windows have different
-recovery characteristics.
+**Sleep on `retry_after_seconds` (or the `Retry-After` header, or
+`X-RateLimit-Reset`) and retry — the timer is kind-aware on both
+daily and monthly quotas.** All three surfaces agree.
 
-### `quota_kind: "daily"` — sleep `retry_after_seconds` (or `Retry-After`)
-
-Daily quotas reset at the next UTC midnight, and both `retry_after_seconds`
-and the `Retry-After` header are reliable. Sleep the indicated duration
-and retry.
+For monthly quotas the timer points at *the next slot* in the trailing
+30-day window (not the full ceiling restoring at once), so a successful
+retry consumes that newly-available slot — back-to-back retries against
+a fully-exhausted monthly key will still 429.
 
 ```js Node.js
 async function permitcoreWithRetry(path, attempt = 1) {
@@ -106,39 +113,30 @@ async function permitcoreWithRetry(path, attempt = 1) {
   });
   if (res.status === 429) {
     const body = await res.json();
-    const retryAfter = Number(res.headers.get("retry-after") ?? body.retry_after_seconds ?? 0);
+    const retryAfter = Number(
+      res.headers.get("retry-after") ?? body.retry_after_seconds ?? 0,
+    );
 
-    if (body.quota_kind === "daily") {
-      // Daily quota: timer is trustworthy. Sleep and retry.
-      if (attempt < 3) {
-        await new Promise((r) => setTimeout(r, retryAfter * 1000));
-        return permitcoreWithRetry(path, attempt + 1);
-      }
-    } else if (body.quota_kind === "monthly") {
-      // Monthly quota: timers are kind-blind (see caveat). Do NOT
-      // sleep-until-reset — back off conservatively, surface to user.
-      throw new Error(
-        `Monthly quota exhausted for tier ${body.tier_name}. ` +
-        `Limit ${body.limit}; check usage at /account/api-keys.`
-      );
+    // Sleep the indicated duration and retry. Same logic for daily +
+    // monthly — quota_kind only matters for the user-facing narrative.
+    if (attempt < 3 && retryAfter > 0) {
+      await new Promise((r) => setTimeout(r, retryAfter * 1000));
+      return permitcoreWithRetry(path, attempt + 1);
     }
-    throw new Error(`Rate limited (${body.quota_kind})`);
+    throw new Error(
+      `Rate limited (quota_kind=${body.quota_kind}, tier=${body.tier_name}). ` +
+      `Limit ${body.limit}; check usage at /account/api-keys.`,
+    );
   }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 ```
 
-### `quota_kind: "monthly"` — do NOT sleep-until-reset
-
-Monthly quotas use a trailing-30-day window, and **both `retry_after_seconds`
-and `X-RateLimit-Reset` are currently kind-blind** — they assume
-next-UTC-midnight semantics which only hold for daily windows. Treat the
-monthly 429 as a "back off conservatively and surface to user" event,
-not a sleep-and-retry event.
-
-This caveat will be removed when the pipeline ships the kind-aware fix
-(`bl-header-reset-kind-aware`, currently in the active queue).
+If you want to surface a user-facing message that distinguishes "daily
+quota — comes back at midnight UTC" from "monthly quota — slots restore
+progressively over the next 30 days," branch on `quota_kind` for the
+narrative. The retry mechanics are the same either way.
 
 ### Other guidance
 

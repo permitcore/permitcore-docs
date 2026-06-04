@@ -3,6 +3,22 @@ title: "Changelog"
 description: "Versioned release notes for the PermitCore API + docs site."
 ---
 
+## 2026-06-04 — Rate-limit reset surfaces now quota-kind-aware
+
+The `X-RateLimit-Reset` response header and the 429 problem+json envelope's
+`reset_at` field are now interpreted via the binding `quota_kind`:
+
+- **`daily`** — next UTC midnight (full ceiling restores at once).
+- **`monthly`** — earliest moment usage ages out of the trailing 30-day
+  window (slots restore progressively).
+- **unlimited** — `X-RateLimit-Reset` is absent; `reset_at` is absent from
+  the 429 body.
+
+The `reset_at` field has been added to the 429 envelope field map. The
+previous "treat monthly 429s as non-sleepable" caveat is removed: both
+kinds support sleep on `retry_after_seconds` / `Retry-After` /
+`X-RateLimit-Reset` now. See [Rate limits](/concepts/rate-limits).
+
 ## 2026-06-04 — Bucket 2 shipped
 
 The endpoint family announced at v1 launch as "Coming ~3 weeks (Bucket 2)" is live.
