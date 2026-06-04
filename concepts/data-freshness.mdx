@@ -1,9 +1,9 @@
 ---
 title: "Data freshness"
-description: "Daily refresh cadence, the `as_of_utc` timestamp, and field-level data-quality flags."
+description: "Nightly refresh cadence, the `as_of_utc` timestamp, and field-level data-quality flags."
 ---
 
-PermitCore refreshes permit data **daily** from each metro's open-data
+PermitCore refreshes permit data **nightly** from each metro's open-data
 portal. Cohort classification, DQ flagging, and parcel join happen in the
 same nightly pipeline.
 
@@ -41,8 +41,8 @@ breakdowns lag the underlying data by **at most 1 hour** beyond the
 upstream pipeline's own latency.
 
 For real-time-critical use cases (e.g., webhook-driven CRM lead loading),
-use the future `/v1/permits` endpoint directly + the webhook stream
-shipping in Bucket 2+.
+use the [`/v1/permits`](/api-reference/permits) endpoint directly. A
+webhook event stream is on the roadmap and not yet available.
 
 ## Field-level data-quality flags
 
@@ -57,10 +57,10 @@ These tell you which fields are measured vs inferred vs placeholder:
 | `roof_missing` | Roof area unavailable |
 | `addr_unmatched` | Address didn't match the parcel layer; geometry absent |
 | `type_ambiguous` | Permit type couldn't be cleanly classified to one cohort |
-| ...and 6 more (see `/v1/permits` reference, shipping ~3 weeks) | |
+| ...and 6 more (see [`/v1/permits` reference](/api-reference/permits)) | |
 
-DQ flags appear in permit-listing responses (future) but NOT in the
-cohort distribution endpoint, which is aggregate-only.
+DQ flags appear in permit-listing responses (`GET /v1/permits`) but NOT
+in the cohort distribution endpoint, which is aggregate-only.
 
 ## How freshness interacts with your billing
 

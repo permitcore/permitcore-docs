@@ -1,95 +1,163 @@
 ---
 title: "Rate limits"
-description: "Per-tier monthly quotas, `429 Too Many Requests` handling, and the Bucket 2 tier-aware enforcement roadmap."
+description: "Per-tier request + export quotas, the RFC 9457 problem+json 429 shape, and the X-RateLimit-* response headers."
 ---
 
-<Note>
-**Status:** rate limits are currently **uniform across all keys at 100K
-requests / month**. Tier-aware enforcement ships in ~3 weeks as part of
-the Bucket 2 data-pipeline release. Your tier still controls **cohort
-coverage** + **history depth** today; the request ceiling unifies during
-this early launch window.
-</Note>
+PermitCore enforces **per-tier monthly request + export ceilings** on every
+quota-gated endpoint. The current tier model is **Free / Pro / Enterprise** —
+see <a href="https://permitcore.io/pricing">permitcore.io/pricing</a> for the
+buy flow.
 
-## Tier matrix (future state)
+## Tier matrix
 
-| Tier | Request quota | Cohorts | History | Webhooks |
-|------|---------------|---------|---------|----------|
-| Free | 1,000 / day | 6 (subset) | 30 days | — |
-| Hobby ($49/mo) | 10,000 / month | All 18 | 90 days | 1 |
-| Builder ($149/mo) | 100,000 / month | All 18 | Full | 5 |
-| Growth ($299/mo) | 500,000 / month | All 18 | Full | 25 |
-| Pro | Custom | All 18 + custom | Full | Unlimited |
+| Tier | Price | Request quota | Export quota |
+|------|-------|---------------|--------------|
+| Free | Free | 1,000 / month (up to 100/day) | 5,000 / month (up to 500/day) |
+| Pro | $89 / month or $890 / year | 100,000 / month | Unlimited |
+| Enterprise | Contact for pricing | Custom | Custom |
 
-Free tier resets daily at 00:00 UTC. Paid tiers reset monthly on the
-first of each month UTC.
+All tiers include all 18 cohorts and full history.
 
-See <a href="https://permitcore.io/pricing">permitcore.io/pricing</a> for the full breakdown.
+Webhook event delivery is on the roadmap and not yet available.
 
-## 429 responses
+## Per-response rate-limit headers
 
-When a key exceeds its quota, the API returns:
+Every 2xx response from `/v1/permits` (and other quota-gated endpoints)
+carries the following headers so your client can self-throttle:
+
+| Header                            | Example       | Meaning |
+| --------------------------------- | ------------- | --- |
+| `X-RateLimit-Tier`                | `pro`         | Canonical tier serving the request: `free`, `pro`, or `enterprise`. |
+| `X-RateLimit-Limit-Requests`      | `100000`      | Ceiling for the **currently-binding** quota window. |
+| `X-RateLimit-Remaining-Requests`  | `99997`       | Requests remaining in the binding window before the next 429. |
+| `X-RateLimit-Quota-Kind`          | `monthly`     | Which dimension is binding right now: `daily` or `monthly`. Free is bound by either (1K/month or 100/day) — header reports whichever 429s next. |
+| `X-RateLimit-Reset`               | `2026-06-05`  | UTC midnight of the next quota reset. **See caveat below.** |
+
+### `X-RateLimit-Reset` caveat (known limitation)
+
+`X-RateLimit-Reset` is emitted as **next-UTC-midnight unconditionally**,
+regardless of the binding quota kind. This is correct when
+`X-RateLimit-Quota-Kind: daily` (resets at the next UTC midnight) but
+**wrong when `X-RateLimit-Quota-Kind: monthly`** — monthly quotas use a
+trailing-30-day window, not a calendar reset. A fix is in the pipeline's
+active queue (`bl-header-reset-kind-aware`). When it lands, this caveat
+section will be removed and the docs will simplify.
+
+## 429 response shape (RFC 9457 problem+json)
+
+When a key exceeds its quota, the API returns `429 Too Many Requests`
+with a `Content-Type: application/problem+json` body conforming to
+[RFC 9457](https://www.rfc-editor.org/rfc/rfc9457):
 
 ```http
 HTTP/1.1 429 Too Many Requests
 Retry-After: 3600
-Content-Type: application/json
+Content-Type: application/problem+json
 
 {
-  "error": {
-    "code": "rate_limited",
-    "message": "Rate limit exceeded. Quota resets at the indicated time.",
-    "detail": {
-      "period": "month",
-      "limit": 100000,
-      "used": 100000,
-      "resets_at": "2026-06-01T00:00:00Z"
-    }
-  }
+  "type": "https://api.permitcore.io/errors/monthly-requests-quota-exceeded",
+  "title": "Monthly request quota exceeded",
+  "detail": "You have used 100000 of 100000 requests for the current monthly window.",
+  "retry_after_seconds": 3600,
+  "limit": 100000,
+  "quota_kind": "monthly",
+  "tier_name": "pro",
+  "tier_quota_daily": null,
+  "tier_quota_monthly": 100000,
+  "legacy_code": "rate_limited"
 }
 ```
 
-## Recommended client behavior
+### Field map
 
-1. **Respect `Retry-After`.** Header value is in seconds. For quota-based
-   429s the value is large (until period reset); for burst-based 429s
-   (future) it'll be short.
-2. **Exponential backoff** for transient 429s (`Retry-After` < 60s).
-3. **Cache responses** when you can — most endpoints declare
-   `Cache-Control` headers (e.g., cohort distribution caches 1 hour).
-4. **Bulk over loop.** Where the API supports bulk parameters, prefer them.
+| Field | Type | Contractual? | Meaning |
+| --- | --- | --- | --- |
+| `type` | URI string | **YES** | Stable identifier. Pattern: `https://api.permitcore.io/errors/{daily\|monthly}-{requests\|exports}-quota-exceeded`. Branch your error-handling on this URI, not on `title`/`detail`. |
+| `title` | string | NO — illustrative only | Short human-readable summary. **Not contractual** — prose may change without notice. |
+| `detail` | string | NO — illustrative only | Longer human-readable explanation, often with the binding numbers inlined. **Not contractual.** |
+| `retry_after_seconds` | integer | **YES** | Seconds to wait before the next request is likely to succeed. Equals the `Retry-After` header. |
+| `limit` | integer | **YES** | The ceiling for the currently-binding quota window — matches `X-RateLimit-Limit-Requests`. |
+| `quota_kind` | `"daily"` \| `"monthly"` | **YES** | Which dimension was binding when the 429 fired. |
+| `tier_name` | string | **YES** | Canonical tier name (`free`, `pro`, `enterprise`). |
+| `tier_quota_daily` | integer \| null | **YES** | The tier's daily ceiling. `null` means **unlimited** on that dimension (Pro + Enterprise have no daily ceiling). |
+| `tier_quota_monthly` | integer \| null | **YES** | The tier's monthly ceiling. `null` means **unlimited**. |
+| `legacy_code` | string | **DEPRECATED** — removed after 2026-06-27 | Legacy `error.code` value (`rate_limited`) emitted for clients written against the pre-RFC-9457 envelope. **Migrate to branching on `type`.** Field will be removed entirely after 2026-06-27. |
+| `grandfather_until` | ISO 8601 timestamp | Conditional / rare | Present only when an account is mid-migration between tier configurations. Most responses omit this field. |
 
-## Example: handling 429 with backoff
+Title and detail are **illustrative** — the example body shows representative
+prose, but title/detail may change without notice. Always branch on `type`
+or `legacy_code` (until removed); never on the prose fields.
+
+## Recommended retry behavior
+
+**Branch on `quota_kind` first** — different binding windows have different
+recovery characteristics.
+
+### `quota_kind: "daily"` — sleep `retry_after_seconds` (or `Retry-After`)
+
+Daily quotas reset at the next UTC midnight, and both `retry_after_seconds`
+and the `Retry-After` header are reliable. Sleep the indicated duration
+and retry.
 
 ```js Node.js
 async function permitcoreWithRetry(path, attempt = 1) {
   const res = await fetch(`https://api.permitcore.io${path}`, {
-    headers: {
-      Authorization: `Bearer ${process.env.PERMITCORE_API_KEY}`,
-      Accept: "application/json",
-    },
+    headers: { Authorization: `Bearer ${process.env.PERMITCORE_API_KEY}` },
   });
   if (res.status === 429) {
-    const retryAfter = Number(res.headers.get("retry-after") ?? "0");
-    if (retryAfter < 60 && attempt < 3) {
-      await new Promise((r) => setTimeout(r, retryAfter * 1000 || 2 ** attempt * 1000));
-      return permitcoreWithRetry(path, attempt + 1);
+    const body = await res.json();
+    const retryAfter = Number(res.headers.get("retry-after") ?? body.retry_after_seconds ?? 0);
+
+    if (body.quota_kind === "daily") {
+      // Daily quota: timer is trustworthy. Sleep and retry.
+      if (attempt < 3) {
+        await new Promise((r) => setTimeout(r, retryAfter * 1000));
+        return permitcoreWithRetry(path, attempt + 1);
+      }
+    } else if (body.quota_kind === "monthly") {
+      // Monthly quota: timers are kind-blind (see caveat). Do NOT
+      // sleep-until-reset — back off conservatively, surface to user.
+      throw new Error(
+        `Monthly quota exhausted for tier ${body.tier_name}. ` +
+        `Limit ${body.limit}; check usage at /account/api-keys.`
+      );
     }
-    throw new Error(`Rate limited; retry at ${new Date(Date.now() + retryAfter * 1000)}`);
+    throw new Error(`Rate limited (${body.quota_kind})`);
   }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 ```
 
-## Future: burst limits + per-endpoint quotas
+### `quota_kind: "monthly"` — do NOT sleep-until-reset
 
-Bucket 2 (~3 weeks) introduces:
+Monthly quotas use a trailing-30-day window, and **both `retry_after_seconds`
+and `X-RateLimit-Reset` are currently kind-blind** — they assume
+next-UTC-midnight semantics which only hold for daily windows. Treat the
+monthly 429 as a "back off conservatively and surface to user" event,
+not a sleep-and-retry event.
 
-- **Per-endpoint burst limits** (e.g., 30 req/sec sustained for permits
-  endpoint)
-- **Per-tier request ceilings** (matrix above — Free is daily, paid tiers monthly)
-- **Cohort-coverage gating** (Free tier capped to 6 subset cohorts)
-- **Webhook event quotas** (paid tiers only)
+This caveat will be removed when the pipeline ships the kind-aware fix
+(`bl-header-reset-kind-aware`, currently in the active queue).
 
-Watch the [changelog](/changelog) for rollout notes.
+### Other guidance
+
+1. **Cache responses** when you can — most endpoints declare
+   `Cache-Control` headers (e.g., cohort distribution caches 1 hour).
+2. **Bulk over loop.** Where the API supports bulk parameters, prefer them.
+3. **Watch `X-RateLimit-Remaining-Requests`** on 2xx responses — back off
+   *before* the 429 fires.
+
+## Migration: `legacy_code` removal 2026-06-27
+
+The `legacy_code` field (`"rate_limited"`) was added at launch for clients
+written against a pre-RFC-9457 error envelope shape. **It will be removed
+on 2026-06-27.** Before that date:
+
+- Migrate any client logic branching on `error.code === "rate_limited"`
+  to branching on `type` (URI) instead.
+- The `type` URI pattern is stable: `…/errors/{daily|monthly}-{requests|exports}-quota-exceeded`.
+- If you can't migrate by 2026-06-27, fall back to branching on HTTP
+  status `429` plus the `X-RateLimit-*` headers.
+
+Watch the [changelog](/changelog) for the removal notice.

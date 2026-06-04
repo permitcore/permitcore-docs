@@ -32,11 +32,10 @@ The `Accept` header is recommended but optional — responses default to JSON.
 3. Your active key is shown once at creation — copy it then; we don't store
    it in plain text after the initial display
 
-<Note>
-**Bucket 2 status:** keys are issued on signup today. Programmatic
-creation + rotation endpoints (`POST /v1/keys`, `DELETE /v1/keys/{prefix}`)
-ship in ~3 weeks.
-</Note>
+Keys can be created either at signup (auto-issued first key) or
+programmatically via [`POST /v1/keys`](/api-reference/keys#post-v1keys-create-a-key).
+Rotation is supported via [`DELETE /v1/keys/{prefix}`](/api-reference/keys#delete-v1keysprefix-revoke-a-key)
+followed by a fresh create.
 
 ## Security best practices
 
@@ -45,7 +44,6 @@ ship in ~3 weeks.
 - **Rotate keys quarterly** or immediately if exposure is suspected.
 - **Use one key per environment** (production, staging, local). Easier to
   scope an incident if one is compromised.
-- **Restrict by IP** when programmatic key management ships (Bucket 2).
 
 ## Error responses for auth failures
 

@@ -166,8 +166,10 @@ When **not** to use `total_target_permits`:
   understates by ~57% on NYC and roughly similar on other large metros.
   Use the metro page on permitcore.io for the lifetime silver count.
 - For *time-bounded* counts (e.g., "permits issued in 2025"), this
-  endpoint is the wrong tool — use `/v1/permits` with `since=` /
-  `until=` filters when it ships (Bucket 2).
+  endpoint is the wrong tool — use
+  [`/v1/permits`](/api-reference/permits) with the `issued_after=`
+  filter. (Upper-bound `until=` filter is on the roadmap, not yet
+  available.)
 
 ## Errors
 
@@ -185,7 +187,7 @@ When **not** to use `total_target_permits`:
 The upstream API responds with `Cache-Control: max-age=3600`. The
 PermitCore site consumes this endpoint via Next.js ISR with
 `revalidate: 3600`, so site-rendered pages lag the underlying pipeline
-by **at most 1 hour** beyond the pipeline's own daily refresh.
+by **at most 1 hour** beyond the pipeline's own nightly refresh.
 
 For your own caching, the 1-hour value is a safe upper bound — pipeline
 data only changes once per 24 hours per metro.
@@ -193,4 +195,4 @@ data only changes once per 24 hours per metro.
 ## Related
 
 - [Concepts → Cohorts](/concepts/cohorts) — what each cohort covers
-- [Permits endpoint](/api-reference/permits) — paginate the rows behind each count (~3 weeks)
+- [Permits endpoint](/api-reference/permits) — paginate the rows behind each count.

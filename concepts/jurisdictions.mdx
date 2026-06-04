@@ -1,6 +1,6 @@
 ---
 title: "Jurisdictions"
-description: "What a jurisdiction is, the 26-metro coverage map today, and the MAPPED / SOURCE / DEPLOY-PENDING status model."
+description: "What a jurisdiction is, the 25-metro coverage map today, and the MAPPED / DEPLOY-PENDING status model."
 ---
 
 A **jurisdiction** is a single city or metro area that PermitCore ingests
@@ -10,23 +10,21 @@ permits from. Identified by a lowercase URL-safe slug (`nyc`, `la`, `houston`).
 
 | Status | Count | What this means |
 |--------|-------|-----------------|
-| `MAPPED` | 18 metros | Full ingest active. Daily refresh. Cohort classification + DQ flags inline. Parcel-joined geometry where the metro publishes it. |
-| `SOURCE` | 5 metros | Bronze ingest active. Sample-tier rows visible. MAPPED promotion in production-ingest queue (Q3 2026). |
-| `DEPLOY-PENDING` | 3 metros | Code merged; production-ingest queue rollout Q3 2026. No live data yet. |
+| `MAPPED` | 21 metros | Full ingest active. Refreshed nightly. Cohort classification + DQ flags inline. Parcel-joined geometry where the metro publishes it. |
+| `DEPLOY-PENDING` | 4 metros | Code merged; production-ingest queue rollout coming soon. No live data yet. |
 
-The **26 metros today** cover the top US metros by permit volume; expansion
+The **25 metros today** cover the top US metros by permit volume; expansion
 follows a defined cohort coverage roadmap.
 
-- **MAPPED (18):** NYC, LA, Chicago, Houston, SF, Seattle, Boston, Atlanta,
-  DC, Dallas, Philadelphia, San Diego, Charlotte, Nashville, Columbus,
-  Indianapolis, Fort Worth, San Antonio.
-- **SOURCE (5):** Phoenix, Austin, Miami, Portland, Las Vegas.
-- **DEPLOY-PENDING (3):** Denver, Oklahoma City, Jacksonville.
+- **MAPPED (21):** NYC, LA, Chicago, Houston, Phoenix, SF, Austin, Seattle,
+  Boston, Atlanta, Miami, Denver, DC, Philadelphia, Charlotte, Portland,
+  Nashville, Las Vegas, Columbus, Fort Worth, San Antonio.
+- **DEPLOY-PENDING (4):** Dallas, Indianapolis, Jacksonville, Oklahoma City.
 
 ## Status meanings
 
 ### MAPPED
-The metro's full permit feed is ingested daily, classified to the canonical
+The metro's full permit feed is ingested nightly, classified to the canonical
 18 cohorts, DQ-flagged at the field level, and parcel-joined to PLUTO or
 the local equivalent where available. API requests against a MAPPED metro
 return real production data.
@@ -35,16 +33,18 @@ return real production data.
 Bronze ingest is active — raw permits are flowing into PermitCore — but
 cohort classification, DQ flagging, and parcel join are queued for
 production promotion. API requests against a SOURCE metro return sample
-rows, NOT the full feed. Promotion ETA: Q3 2026 per current roadmap.
+rows, NOT the full feed. No metros are in this state today; the bucket
+is preserved for future bronze-ingest metros on their way to MAPPED.
 
 ### DEPLOY-PENDING
 The ingest pipeline code is merged but not yet running in production for
 this metro. API requests return no data; the cohort distribution endpoint
-returns `404` for these slugs. ETA: Q3 2026.
+returns `404` for these slugs. ETA: coming soon — pipeline pings per-metro
+on ship.
 
 ## Slug list
 
-Browse all 26 metro pages: <a href="https://permitcore.io">permitcore.io</a>
+Browse all 25 metro pages: <a href="https://permitcore.io">permitcore.io</a>
 (metro tiles on the homepage).
 
 A complete machine-readable list is available in the cohort-distribution
@@ -54,5 +54,5 @@ PermitCore has any data for.
 ## Related
 
 - [Cohorts](/concepts/cohorts) — the 18-cohort taxonomy that classifies every permit
-- [Data freshness](/concepts/data-freshness) — daily refresh cadence + `as_of_utc` interpretation
+- [Data freshness](/concepts/data-freshness) — nightly refresh cadence + `as_of_utc` interpretation
 - [Data licensing](/concepts/data-licensing) — commercial-use terms + attribution

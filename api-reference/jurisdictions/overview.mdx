@@ -12,8 +12,8 @@ primary path parameter.
 | Method | Path | Status |
 |--------|------|--------|
 | `GET` | `/v1/jurisdictions/{slug}/cohorts/distribution` | **Live** |
-| `GET` | `/v1/jurisdictions` (list all jurisdictions) | Coming with Bucket 2 |
-| `GET` | `/v1/jurisdictions/{slug}` (metro detail + totals) | Coming with Bucket 2 |
+| `GET` | `/v1/jurisdictions` (list all jurisdictions) | Not yet available — roadmap |
+| `GET` | `/v1/jurisdictions/{slug}` (metro detail + totals) | Not yet available — roadmap |
 
 ## Slug conventions
 
@@ -29,9 +29,11 @@ PermitCore's coverage map.
 See [Concepts → Jurisdictions](/concepts/jurisdictions) for the full
 coverage table + status meanings.
 
-## Future: list endpoint contract preview
+## Proposed: list endpoint contract preview
 
-Shipping in Bucket 2, the listing endpoint will respond:
+The list and per-metro detail endpoints are on the roadmap; not yet
+available. The shape below is a **proposed future contract** — final
+shape may differ when the endpoints ship.
 
 ```json
 {
@@ -42,18 +44,11 @@ Shipping in Bucket 2, the listing endpoint will respond:
       "status": "MAPPED",
       "total_target_permits": 3218856,
       "as_of_utc": "2026-05-24T02:00:00Z"
-    },
-    {
-      "slug": "denver",
-      "display_name": "Denver, CO",
-      "status": "DEPLOY-PENDING",
-      "total_target_permits": null,
-      "as_of_utc": null
     }
   ]
 }
 ```
 
-Until then, the canonical metro list lives on
+Until shipped, the canonical metro list lives on
 <a href="https://permitcore.io">permitcore.io</a>'s homepage (metro tiles)
 and in the URL space of the cohort distribution endpoint.

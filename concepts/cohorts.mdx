@@ -42,17 +42,17 @@ categories that other systems sometimes split:
 - **Fire-protection / sprinkler** — folded into `commercial_mep` / `residential_mep`
 - **Data center** — folded into `industrial_new`
 
-These are on the data-pipeline roadmap as future sub-cohort splits. Until
-then, query the rolled-up parent and filter downstream by permit-type
+These are on the data-pipeline roadmap as future sub-cohort splits. For
+now, query the rolled-up parent and filter downstream by permit-type
 keywords.
 
 ## Cohort assignment
 
 Cohort tags are emitted by PermitCore's LLM-1 classifier per permit. Tags
-are deterministic per permit (same input → same cohort), explainable
-(reasoning surfaced via the future `/v1/permits/{id}/explanation` endpoint),
-and improve over time as the classifier is fine-tuned on operator-validated
-labels.
+are deterministic per permit (same input → same cohort) and improve over
+time as the classifier is fine-tuned on operator-validated labels. A
+per-permit `/v1/permits/{id}/explanation` endpoint surfacing the
+classifier's reasoning is on the roadmap.
 
 Every permit has exactly one cohort. No multi-label.
 
@@ -68,5 +68,6 @@ curl "https://api.permitcore.io/v1/jurisdictions/nyc/cohorts/distribution" \
 See [Cohort distribution endpoint →](/api-reference/jurisdictions/cohort-distribution)
 for the full response shape.
 
-The permit-listing endpoint (`/v1/permits?cohort=…&jurisdiction=…`,
-shipping ~3 weeks) lets you paginate the rows backing each count.
+The [permit-listing endpoint](/api-reference/permits)
+(`/v1/permits?cohort=…&jurisdiction=…`) lets you paginate the rows
+backing each count.
