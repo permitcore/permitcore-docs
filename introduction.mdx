@@ -1,10 +1,10 @@
 ---
 title: "Welcome to PermitCore"
-description: "Daily-refreshed US building-permit data with field-level provenance and a canonical 18-cohort taxonomy."
+description: "Refreshed-nightly US building-permit data with field-level provenance and a canonical 18-cohort taxonomy."
 ---
 
-PermitCore is a building-permit data platform. The API ships **daily-refreshed**
-permits across **26 US metros** today (18 MAPPED + 5 SOURCE + 3 DEPLOY-PENDING),
+PermitCore is a building-permit data platform. The API ships **nightly-refreshed**
+permits across **25 US metros** today (21 MAPPED + 4 DEPLOY-PENDING),
 with cohort classification, parcel-joined geometry where available, and field-level
 data-quality flags inline on every row.
 
@@ -17,22 +17,16 @@ This documentation covers the public **`v1` HTTP API** at `https://api.permitcor
     `GET /v1/jurisdictions/{slug}/cohorts/distribution` — per-jurisdiction
     breakdown across the canonical 18 cohorts. Cached 1 hour upstream.
   </Card>
+  <Card title="Permits (list + filter)" icon="database" href="/api-reference/permits">
+    `GET /v1/permits?jurisdiction=&cohort=&issued_after=&per_page=&page=` —
+    paginated permit rows with field-level DQ flags.
+  </Card>
+  <Card title="API key management" icon="key" href="/api-reference/keys">
+    Programmatic key creation, listing, revocation, and per-key usage telemetry.
+  </Card>
   <Card title="Free sandbox" icon="flask" href="https://permitcore.io/sandbox">
     Search permits across metros in your browser. Client-side DuckDB-WASM;
     no signup required.
-  </Card>
-</CardGroup>
-
-## What's shipping next
-
-<CardGroup cols={2}>
-  <Card title="Permits endpoint" icon="database">
-    `GET /v1/permits?jurisdiction=&cohort=&since=…` — paginated permit
-    rows. ETA ~3 weeks (Bucket 2).
-  </Card>
-  <Card title="API key management" icon="key">
-    Programmatic key creation + rotation. ETA ~3 weeks (Bucket 2). Until
-    then, manage keys via your <a href="https://permitcore.io/account/api-keys">dashboard</a>.
   </Card>
 </CardGroup>
 

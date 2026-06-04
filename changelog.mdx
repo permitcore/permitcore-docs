@@ -3,58 +3,61 @@ title: "Changelog"
 description: "Versioned release notes for the PermitCore API + docs site."
 ---
 
+## 2026-06-04 — Bucket 2 shipped
+
+The endpoint family announced at v1 launch as "Coming ~3 weeks (Bucket 2)" is live.
+
+### Now live
+
+- **`GET /v1/permits`** — paginated permit-listing endpoint with cohort +
+  jurisdiction + date filters. Returns per-row data with the field-level
+  DQ flag object. See [Permits (listing endpoint)](/api-reference/permits).
+- **`POST /v1/keys` + `GET /v1/keys` + `DELETE /v1/keys/{prefix}`** —
+  programmatic API key management. See [API key management](/api-reference/keys).
+- **`GET /v1/keys/{prefix}/usage`** — per-key request counters + quota
+  state. See [API key management](/api-reference/keys#get-v1keysprefixusage-per-key-usage).
+- **Tier-aware rate limits.** Per-tier monthly request + export ceilings
+  enforced server-side. Every quota-gated response carries the
+  `X-RateLimit-*` header family (see [Rate limits](/concepts/rate-limits#per-response-rate-limit-headers)).
+- **OpenAPI 3.1 spec** at `https://api.permitcore.io/openapi.json` —
+  FastAPI-generated from the deployed code; always current.
+- **Pricing: tier model simplified to Free / Pro ($89/mo, $890/yr) / Enterprise.**
+  See <a href="https://permitcore.io/pricing">permitcore.io/pricing</a> for
+  the buy flow.
+
 ## 2026-05-24 — `v1` public launch
 
 First public release.
 
-### Live now
+### Live at launch
 
 - **`GET /v1/jurisdictions/{slug}/cohorts/distribution`** — per-jurisdiction
   cohort breakdown across the canonical 18 cohorts. Cached 1 hour upstream
   (`Cache-Control: max-age=3600`).
-- **26 metros covered** (18 MAPPED + 5 SOURCE + 3 DEPLOY-PENDING):
-  - **MAPPED (18):** NYC, LA, Chicago, Houston, SF, Seattle, Boston, Atlanta,
-    DC, Dallas, Philadelphia, San Diego, Charlotte, Nashville, Columbus,
-    Indianapolis, Fort Worth, San Antonio.
-  - **SOURCE (5):** Phoenix, Austin, Miami, Portland, Las Vegas.
-  - **DEPLOY-PENDING (3):** Denver, Oklahoma City, Jacksonville.
-
-  See [Concepts → Jurisdictions](/concepts/jurisdictions) for the status meanings.
+- **25 US metros covered** (21 MAPPED + 4 DEPLOY-PENDING).
+  See [Concepts → Jurisdictions](/concepts/jurisdictions) for the status
+  meanings + per-status metro lists.
 - **18 canonical cohorts** classified per permit via PermitCore's LLM-1
-  classifier. See [Concepts → Cohorts](/concepts/cohorts) for the full
-  taxonomy + what each cohort covers.
+  classifier. See [Concepts → Cohorts](/concepts/cohorts).
 - **Free in-browser sandbox** at <a href="https://permitcore.io/sandbox">
   permitcore.io/sandbox</a> — client-side DuckDB-WASM queries against the
-  last 10 days of permits across the 18 MAPPED metros. No signup required.
-- **Self-serve signup + tier subscriptions** via Stripe Checkout.
-  Free / Hobby ($49/mo) / Builder ($149/mo) / Growth ($299/mo) tiers.
+  last 10 days of permits across the live metros. No signup required.
+- **Self-serve signup + Stripe Checkout.** See
+  <a href="https://permitcore.io/pricing">permitcore.io/pricing</a> for
+  the current tier breakdown.
 
-### Coming ~3 weeks (Bucket 2)
+### Coming later
 
-- **`GET /v1/permits`** — paginated permit-listing endpoint with cohort +
-  jurisdiction + date filters. Returns full row data with field-level DQ
-  flags.
-- **`POST /v1/keys` + `GET /v1/keys` + `DELETE /v1/keys/{prefix}`** —
-  programmatic API key management.
-- **`GET /v1/keys/{prefix}/usage`** — per-key request counters + recent
-  invocation log.
-- **Tier-aware rate limits.** Per-tier monthly request quotas + per-tier
-  cohort coverage. Currently uniform at 100K req/mo across all keys
-  during the early-launch window.
-- **OpenAPI 3.1 spec** exposed at `https://api.permitcore.io/openapi.json`.
-- **Webhook stream** for real-time permit-filing push delivery (paid tiers).
-
-### Coming later (Bucket 3+)
-
-- Additional cohort splits (commercial_roofing, residential_solar,
-  data_center) — currently rolled into commercial_alteration / residential_mep /
-  industrial_new respectively.
-- Snowflake + BigQuery share endpoints for Pro / Enterprise tiers.
-- MCP server (Claude Desktop, Cursor, Cline integration) for AI-agent use.
+- **Webhook stream** — real-time permit-filing push delivery is on the
+  roadmap and not yet available.
+- Additional cohort splits (e.g., commercial_roofing, solar) are on
+  the roadmap.
+- Snowflake + BigQuery share endpoints for higher-volume customers.
+- MCP server for AI-agent integration.
 
 ### Deprecations
 
-None yet — this is the initial `v1` release.
+None as of this release.
 
 ## How to track changes
 

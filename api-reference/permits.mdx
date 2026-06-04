@@ -1,70 +1,102 @@
 ---
 title: "Permits (listing endpoint)"
-description: "Paginate permit rows by jurisdiction × cohort × date. Coming with the Bucket 2 data-pipeline release (~3 weeks)."
+description: "Paginate permit rows by jurisdiction × cohort × date with field-level DQ flags."
+api: "GET https://api.permitcore.io/v1/permits"
 ---
-
-<Note>
-**Status:** this endpoint ships with the Bucket 2 data-pipeline release
-(~3 weeks). Contract preview below; treat as draft until ship date.
-For aggregate cohort counts today, see
-[cohort distribution](/api-reference/jurisdictions/cohort-distribution).
-</Note>
-
-## Draft contract
-
-`GET /v1/permits?jurisdiction=&cohort=&since=&until=&limit=&cursor=`
 
 Returns paginated permit rows filtered by jurisdiction + cohort + date range.
 
-### Query parameters (preview)
+## Authentication
 
-| Param | Type | Notes |
-|-------|------|-------|
-| `jurisdiction` | string (slug) | Required. Single metro slug |
-| `cohort` | string (slug) | Optional. One of the 18 canonical cohorts; omit for all cohorts |
-| `since` | ISO 8601 date | Optional. Lower bound for `issued_date` |
-| `until` | ISO 8601 date | Optional. Upper bound for `issued_date` |
-| `limit` | integer | Optional. Page size, default 100, max 1000 |
-| `cursor` | string | Optional. Opaque cursor from prior page's `next_cursor` |
+`Authorization: Bearer <your-api-key>` — see [Authentication](/authentication).
 
-### Response shape (preview)
+## Query parameters
+
+| Param            | Type            | Notes |
+|------------------|-----------------|-------|
+| `jurisdiction`   | string (slug)   | Required. Single metro slug, e.g. `nyc`, `la`. |
+| `cohort`         | string (slug)   | Optional. One of the 18 canonical cohorts; omit for all cohorts. |
+| `target_segment` | string (slug)   | Optional. Curated cohort filter for the `/v1/permits/target` variant — see the variant section below. |
+| `issued_after`   | ISO 8601 date   | Optional. Lower bound for `issued_date` (YYYY-MM-DD). |
+| `per_page`       | integer         | Optional. Page size; max 500. |
+| `page`           | integer         | Optional. 1-indexed page number. |
+
+## Response shape
 
 ```json
 {
-  "permits": [
+  "items": [
     {
-      "permit_id": "NYC-2026-441820",
+      "canonical_uid": "1:810427815|Suspended Scaffold",
+      "source_permit_id": "...",
       "jurisdiction_slug": "nyc",
-      "cohort": "commercial_alteration",
-      "issued_date": "2026-05-21",
-      "address": "210 Atlantic Ave, Brooklyn, NY",
-      "borough": "Brooklyn",
-      "contractor": "Skyline Roofing Group LLC",
-      "valuation": 3400000,
-      "roof_area_sqft": 22800,
-      "ibc_occupancy": "Business (B)",
-      "pluto_joined": true,
-      "dq_flags": []
+      "issued_date": "2026-05-27",
+      "applied_date": "2026-05-20",
+      "permit_type": "...",
+      "work_class": "industrial",
+      "building_subtype": "...",
+      "cohort": "...",
+      "address": "...",
+      "value_usd": null,
+      "contractor_name": "...",
+      "applicant_name": "...",
+      "dq_flags": {
+        "geocode_is_oob": false,
+        "geocode_is_sentinel": false,
+        "issued_date_is_future_dated": false,
+        "issued_date_is_parse_bug": false,
+        "issued_date_is_placeholder": false,
+        "valuation_usd_is_oob": false,
+        "valuation_usd_is_placeholder": false,
+        "units_total_is_oob": false,
+        "units_total_is_placeholder": false,
+        "units_residential_is_oob": false,
+        "units_residential_is_placeholder": false,
+        "units_commercial_is_placeholder": false
+      }
     }
   ],
-  "next_cursor": "eyJpZCI6Im5lcjJh..."
+  "pagination": {
+    "total_count": 1000,
+    "next_page": 2,
+    "has_more": true
+  }
 }
 ```
 
-## Quotas + per-tier filters
+**Note on `total_count`**: capped at 1,000 on selective-filter queries. When `pagination.has_more` is `true`, the true total exceeds the cap — render as `"1,000+"` if you surface this number directly.
 
-- **Free tier** will be capped to a 6-cohort subset; `cohort` queries
-  outside the subset will 403 with `insufficient_scope`
-- **Hobby tier+** unlocks all 18 cohorts
-- **Webhook stream** for real-time push delivery ships alongside this
-  endpoint (paid tiers only)
+## The `/v1/permits/target` variant
 
-See [Rate limits](/concepts/rate-limits) for the full tier matrix.
+`/v1/permits/target` accepts the same parameters but applies a curated
+commercial/multifamily/ADU filter via `target_segment=<cohort>`. This is
+the cohort-classified slice that the site's recency surfaces query.
 
-## Until then
+`target_segment` accepts **all 18 canonical cohort slugs**. Behavior:
 
-For real-time permit access today, use the
-<a href="https://permitcore.io/sandbox">free in-browser sandbox</a> —
-client-side DuckDB-WASM queries against the last 10 days of permits across
-the 18 MAPPED metros. No signup, no API key, no rate limit (it's all
-client-side).
+- **Valid cohort with zero rows in window:** `200 OK` with an empty
+  `items` array — no `404`. Use `pagination.total_count` to confirm
+  the empty result.
+- **Invalid slug** (not in the 18-cohort enum): `422 Unprocessable Entity`
+  with a problem+json body enumerating the accepted whitelist.
+
+## Quotas
+
+Quotas are tier-based and apply to every request against this endpoint.
+See [Rate limits](/concepts/rate-limits) for the matrix + the
+`X-RateLimit-*` response headers + the 429 problem+json shape.
+
+## Example request
+
+```bash
+curl "https://api.permitcore.io/v1/permits?jurisdiction=nyc&issued_after=2026-05-01&per_page=25" \
+  -H "Authorization: Bearer $PERMITCORE_API_KEY" \
+  -H "Accept: application/json"
+```
+
+## Related
+
+- [Cohort distribution](/api-reference/jurisdictions/cohort-distribution) — aggregate counts behind these rows.
+- [Free sandbox](https://permitcore.io/sandbox) — client-side DuckDB-WASM
+  queries against the last 10 days of permits across the live metros. No
+  signup, no API key.

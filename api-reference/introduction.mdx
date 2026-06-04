@@ -61,30 +61,30 @@ See [Errors](/errors) for the full code catalog + retry guidance.
     **Live today.**
   </Card>
   <Card title="Permits (list + filter)" icon="database" href="/api-reference/permits">
-    `GET /v1/permits?jurisdiction=&cohort=&since=…` — paginated permit
-    rows with field-level DQ flags. **Coming ~3 weeks (Bucket 2).**
+    `GET /v1/permits?jurisdiction=&cohort=&issued_after=…` — paginated permit
+    rows with field-level DQ flags. **Live today.**
   </Card>
   <Card title="Jurisdiction overview" icon="map" href="/api-reference/jurisdictions/overview">
     Resource overview + jurisdiction list endpoint contracts.
   </Card>
   <Card title="API key management" icon="key" href="/api-reference/keys">
     `POST /v1/keys`, `DELETE /v1/keys/{prefix}`, `GET /v1/keys/{prefix}/usage`
-    — programmatic key lifecycle. **Coming ~3 weeks (Bucket 2).**
+    — programmatic key lifecycle. **Live today.**
   </Card>
 </CardGroup>
 
 ## OpenAPI specification
 
 The OpenAPI 3.1 schema is exposed at `https://api.permitcore.io/openapi.json`
-(coming with the Bucket 2 release). Until then, this reference is the
-canonical source for request/response shapes.
+— FastAPI-generated from the deployed code, so it always reflects the
+authoritative request/response shapes. This reference page remains the
+canonical narrative source.
 
-## Status page + SLA
+## Support
 
-- **Free + Hobby:** community support via the in-product chat
-- **Builder:** 48-hour email response SLA
-- **Growth:** priority support + Slack channel
-- **Pro:** named CSM + 99.9% uptime SLA
+Email <a href="mailto:kian@permitcore.io">kian@permitcore.io</a> for
+account, billing, or integration questions on any tier. Enterprise tier
+includes a custom SLA on contact.
 
 For incidents, watch the [changelog](/changelog) — outage notes land
 there in real time.
