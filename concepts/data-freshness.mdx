@@ -59,8 +59,12 @@ These tell you which fields are measured vs inferred vs placeholder:
 | `type_ambiguous` | Permit type couldn't be cleanly classified to one cohort |
 | ...and 6 more (see [`/v1/permits` reference](/api-reference/permits)) | |
 
-DQ flags appear in permit-listing responses (`GET /v1/permits`) but NOT
-in the cohort distribution endpoint, which is aggregate-only.
+DQ flags are pipeline-defined today and exposed via the upstream
+recency artifact that powers the site's recency surfaces. They are
+**not yet emitted on `GET /v1/permits`** — that emission lands with
+the enrichment promotion (alongside `cohort` + the nested `pluto`
+object). Watch the [changelog](/changelog) for the promotion
+announcement.
 
 ## How freshness interacts with your billing
 

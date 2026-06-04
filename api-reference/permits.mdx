@@ -1,10 +1,13 @@
 ---
 title: "Permits (listing endpoint)"
-description: "Paginate permit rows by jurisdiction × cohort × date with field-level DQ flags."
+description: "Paginate permit rows by jurisdiction × date with the full normalized + source fields."
 api: "GET https://api.permitcore.io/v1/permits"
 ---
 
-Returns paginated permit rows filtered by jurisdiction + cohort + date range.
+Returns paginated permit rows filtered by jurisdiction + date range.
+The response example below is **generated from the live OpenAPI spec**
+at <a href="https://api.permitcore.io/openapi.json">api.permitcore.io/openapi.json</a> —
+re-pulled before each docs deploy, never hand-written.
 
 ## Authentication
 
@@ -15,45 +18,75 @@ Returns paginated permit rows filtered by jurisdiction + cohort + date range.
 | Param            | Type            | Notes |
 |------------------|-----------------|-------|
 | `jurisdiction`   | string (slug)   | Required. Single metro slug, e.g. `nyc`, `la`. |
-| `cohort`         | string (slug)   | Optional. One of the 18 canonical cohorts; omit for all cohorts. |
-| `target_segment` | string (slug)   | Optional. Curated cohort filter for the `/v1/permits/target` variant — see the variant section below. |
+| `target_segment` | string (slug)   | Optional. Curated cohort filter for the `/v1/permits/target` variant — see the variant section below. (The plain `cohort=` parameter on this endpoint arrives with the enrichment promotion.) |
 | `issued_after`   | ISO 8601 date   | Optional. Lower bound for `issued_date` (YYYY-MM-DD). |
 | `per_page`       | integer         | Optional. Page size; max 500. |
 | `page`           | integer         | Optional. 1-indexed page number. |
 
 ## Response shape
 
+The example below is generated from the `PermitResponse` schema in
+`openapi.json`. Every field on the live wire is reflected; fields that
+arrive with the upcoming enrichment promotion (cohort, DQ flag object,
+nested PLUTO) are **not** listed below — see the "Coming with enrichment
+promotion" section below.
+
 ```json
 {
   "items": [
     {
-      "canonical_uid": "1:810427815|Suspended Scaffold",
-      "source_permit_id": "...",
+      "id": 4218034,
       "jurisdiction_slug": "nyc",
-      "issued_date": "2026-05-27",
+      "source_permit_id": "BT-202601090",
+      "canonical_uid": "1:BT-202601090",
+      "filing_id": null,
+
+      "address_full": "82 ASP 1ST FLOOR, Manhattan, NY 10009",
+      "address_street": "82 ASP",
+      "address_city": "Manhattan",
+      "address_state": "NY",
+      "address_zip": "10009",
+      "parcel_apn": null,
+      "lat": 40.7271,
+      "lng": -73.9836,
+      "geocode_confidence": 0.92,
+      "geocode_source": "city_geocoder_v2",
+
+      "permit_type_raw": "BUILDING/EW",
+      "permit_type_normalized": "alteration",
+      "work_class": "alteration_minor",
+      "building_subtype": "tenant_improvement",
+      "is_new_construction": false,
+      "is_alteration": true,
+      "is_demolition": false,
+
+      "units_residential": null,
+      "units_commercial": null,
+      "square_footage_total": null,
+      "valuation_usd": 18400,
+
       "applied_date": "2026-05-20",
-      "permit_type": "...",
-      "work_class": "industrial",
-      "building_subtype": "...",
-      "cohort": "...",
-      "address": "...",
-      "value_usd": null,
-      "contractor_name": "...",
-      "applicant_name": "...",
-      "dq_flags": {
-        "geocode_is_oob": false,
-        "geocode_is_sentinel": false,
-        "issued_date_is_future_dated": false,
-        "issued_date_is_parse_bug": false,
-        "issued_date_is_placeholder": false,
-        "valuation_usd_is_oob": false,
-        "valuation_usd_is_placeholder": false,
-        "units_total_is_oob": false,
-        "units_total_is_placeholder": false,
-        "units_residential_is_oob": false,
-        "units_residential_is_placeholder": false,
-        "units_commercial_is_placeholder": false
-      }
+      "issued_date": "2026-05-27",
+      "finaled_date": null,
+      "expired_date": null,
+
+      "current_status": "issued",
+      "status_raw": "ISSUED-PARTIAL",
+      "description_raw": "Interior reno @ unit 3R; partition + finishes; no MEP scope",
+      "description_extracted": null,
+
+      "applicant_name": null,
+      "applicant_role": null,
+      "contractor_name": "MIDTOWN BUILD CO INC",
+      "contractor_license": "GC-0148921",
+      "architect_name": null,
+      "engineer_name": null,
+      "owner_name": null,
+
+      "source_url": "https://www.nyc.gov/site/buildings/permit/BT-202601090",
+      "first_seen_at": "2026-05-27T03:14:22Z",
+      "last_seen_at": "2026-06-04T03:11:08Z",
+      "last_changed_at": "2026-05-27T03:14:22Z"
     }
   ],
   "pagination": {
@@ -65,6 +98,41 @@ Returns paginated permit rows filtered by jurisdiction + cohort + date range.
 ```
 
 **Note on `total_count`**: capped at 1,000 on selective-filter queries. When `pagination.has_more` is `true`, the true total exceeds the cap — render as `"1,000+"` if you surface this number directly.
+
+### What's on the wire today
+
+The wire ships **45 fields** organized as:
+
+- **Identity** — `id`, `jurisdiction_slug`, `source_permit_id`, `canonical_uid`, `filing_id`
+- **Address** — `address_full`, `address_street`, `address_city`, `address_state`, `address_zip`, `parcel_apn`
+- **Geocode metadata** — `lat`, `lng`, `geocode_confidence`, `geocode_source`
+- **Type + classification** — `permit_type_raw`, `permit_type_normalized`, `work_class`, `building_subtype`, `is_new_construction`, `is_alteration`, `is_demolition`
+- **Scope** — `units_residential`, `units_commercial`, `square_footage_total`, `valuation_usd`
+- **Dates** — `applied_date`, `issued_date`, `finaled_date`, `expired_date`
+- **Status + description** — `current_status`, `status_raw`, `description_raw`, `description_extracted`
+- **People** — `applicant_name`, `applicant_role`, `contractor_name`, `contractor_license`, `architect_name`, `engineer_name`, `owner_name`
+- **Source link + timestamps** — `source_url`, `first_seen_at`, `last_seen_at`, `last_changed_at`
+
+Most fields are **nullable** — coverage varies by jurisdiction and by upstream record completeness.
+
+### Coming with the enrichment promotion
+
+The following surfaces are documented elsewhere on the site and the
+docs but are **not yet on the `/v1/permits` wire**. They land together
+with the enrichment promotion (tracked alongside PD-7; rolls out within
+the Q2b window):
+
+- **`cohort`** (one of the 18 canonical cohorts) — today the cohort
+  surface is `GET /v1/jurisdictions/{slug}/cohorts/distribution`
+  (aggregate-only) and the `/v1/permits/target` curated variant.
+- **`dq_flags`** (12-key object: `geocode_is_oob`, `valuation_usd_is_placeholder`,
+  etc.) — pipeline-defined contract; site reads the contract today;
+  endpoint emission is the enrichment work.
+- **`pluto`** (nested object with `building_class`, `zoning_district`,
+  `lot_area`, `year_built`, `units_total`) — currently sparse on the
+  upstream feed; not yet exposed on `/v1/permits`.
+
+Watch the [changelog](/changelog) for the promotion announcement.
 
 ## The `/v1/permits/target` variant
 

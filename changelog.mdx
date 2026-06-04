@@ -3,6 +3,36 @@ title: "Changelog"
 description: "Versioned release notes for the PermitCore API + docs site."
 ---
 
+## 2026-06-04 — `/v1/permits` example regenerated from live OpenAPI
+
+The `GET /v1/permits` response example in the docs is now generated
+from the live `PermitResponse` schema at
+[api.permitcore.io/openapi.json](https://api.permitcore.io/openapi.json),
+adopted as the permanent practice (examples are generated, never
+hand-written, so the docs stop drifting from the wire).
+
+Three documentation corrections rode along:
+
+- **`cohort` removed from the example.** The `/v1/permits` endpoint
+  does not emit a `cohort` field today; the cohort surface is the
+  aggregate `/v1/jurisdictions/{slug}/cohorts/distribution` endpoint
+  and the `/v1/permits/target` curated variant. The plain `cohort=`
+  query parameter on `/v1/permits` arrives with the enrichment
+  promotion (tracked alongside PD-7; lands within the Q2b window).
+- **`dq_flags` removed from the example.** The 12-key DQ flag object
+  is a pipeline-defined contract surfaced via the upstream recency
+  artifact; `/v1/permits` emission arrives with the same enrichment
+  promotion. The data-freshness page's "DQ flags appear in permit-
+  listing responses" line has been reverted to roadmap phrasing.
+- **Nested `pluto` object removed from the example.** Same boat —
+  documented when emission lands.
+
+The example now documents the wire's **real 45-field richer set** —
+including `description_raw`, `current_status`, geocode metadata
+(`lat/lng/geocode_confidence/geocode_source`), `architect_name`,
+`engineer_name`, `owner_name`, and the
+`first_seen_at/last_seen_at/last_changed_at` timestamps.
+
 ## 2026-06-04 — Rate-limit reset surfaces now quota-kind-aware
 
 The `X-RateLimit-Reset` response header and the 429 problem+json envelope's
