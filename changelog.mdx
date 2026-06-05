@@ -3,6 +3,66 @@ title: "Changelog"
 description: "Versioned release notes for the PermitCore API + docs site."
 ---
 
+## 2026-06-04 — PD-7 enrichment promotion shipped
+
+The enrichment fields are now on the live wire.
+
+### New endpoint
+
+- **`GET /v1/permits/by-canonical-uid/{canonical_uid}`** — per-permit
+  detail endpoint. Returns one fully enriched `PermitResponse` row by
+  its stable cross-jurisdictional `canonical_uid`. See
+  [Get a permit by canonical_uid](/api-reference/permits-by-canonical-uid)
+  for the encoding requirements + RFC 9457 `400` / `404` shapes.
+
+  **Encoding heads-up:** clients MUST `encodeURIComponent` the
+  `canonical_uid` before placing it in the path. Real values contain
+  `:`, `|`, spaces, AND `/` (e.g. `1:982522764|Sidewalk Shed`,
+  `182:BLD23/00099`, `85:2026-066944 PP`). Skipping the encode is the
+  most common integration mistake.
+
+### Additive fields on `PermitResponse` (both list + detail)
+
+- **`cohort`** — buyer-targeting bucket; one of the 18 canonical
+  cohorts, or `null` for unsegmented rows. Identical taxonomy to
+  `target_segment` on `/v1/permits/target`.
+- **`dq_flags`** — 12-key boolean object from the WS-PE-DQ-2
+  bounds-rule registry. **Semantic note (SD-039):** `false` on a flag
+  means *"the rule has not flagged this value,"* NOT *"the value was
+  independently verified clean."* NULL silver flag values are coerced
+  to `false`. See [Data freshness → field-level DQ flags](/concepts/data-freshness#field-level-data-quality-flags) for the full registry.
+- **Top-level PLUTO-derived fields** — `units_total`, `year_built`,
+  `building_class`, `zoning_district`, `lot_area`. Denormalized into
+  the silver layer; populated where known.
+- **`description_llm_enriched`** — LLM-extracted feature object
+  (`scope_summary`, `unit_count`, `square_footage`,
+  `tenant_improvement_flag`). Distinct column from
+  `description_extracted`. **Coverage today:** Austin + Chicago
+  `commercial_new` permits only (~17,861 prod rows); broader
+  cross-metro extraction is on the roadmap.
+
+### Nested `pluto` object — detail-endpoint only
+
+The nested `pluto` object (`{is_placeholder, oob}` — PLUTO parcel-data
+presence + per-flag DQ status, NYC only) is **populated on
+`/v1/permits/by-canonical-uid/{canonical_uid}` and ALWAYS `null` on
+`/v1/permits`** by design. The PLUTO LEFT JOIN required to populate
+the DQ-status object would add ~75ms p95 to the list query, which
+disqualifies it for the browse path. See the [list-vs-detail
+asymmetry note](/api-reference/permits#list-vs-detail-asymmetry-the-nested-pluto-object).
+
+### Docs corrections
+
+- The previous `/v1/permits` example's "Coming with enrichment
+  promotion" section is removed — the fields are on the wire now.
+- The data-freshness page's "DQ flags appear in permit-listing
+  responses" line flips to present tense.
+- **Corrected:** the prior data-freshness DQ flag table listed
+  illustrative flag names (e.g. `val_zero`, `roof_estimated`,
+  `addr_unmatched`) that did not match the wire. Replaced with the
+  canonical 12-key registry from `DqFlags` in `openapi.json`
+  (`issued_date_*`, `valuation_usd_*`, `units_*`, `geocode_*`).
+
 ## 2026-06-04 — `/v1/permits` example regenerated from live OpenAPI
 
 The `GET /v1/permits` response example in the docs is now generated

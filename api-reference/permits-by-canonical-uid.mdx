@@ -1,0 +1,240 @@
+---
+title: "Get a permit by canonical_uid"
+description: "Per-permit detail endpoint. Returns one fully enriched row by its stable cross-jurisdictional canonical_uid — including the nested PLUTO presence + DQ object."
+api: "GET https://api.permitcore.io/v1/permits/by-canonical-uid/{canonical_uid}"
+---
+
+The per-permit detail endpoint. Returns a single fully enriched
+`PermitResponse` row by its stable cross-jurisdictional `canonical_uid`.
+
+The shape returned is the same `PermitResponse` schema as
+[`/v1/permits`](/api-reference/permits), with one difference: the
+nested `pluto` object (PLUTO parcel-data presence + DQ status) is
+**populated here, NULL on the list endpoint** — see the
+[asymmetry note](/api-reference/permits#list-vs-detail-asymmetry-the-nested-pluto-object).
+
+## Authentication
+
+`Authorization: Bearer <your-api-key>` — see [Authentication](/authentication).
+
+## The `canonical_uid` path parameter
+
+`canonical_uid` is the stable cross-jurisdictional permit identifier:
+
+```
+{jurisdiction_id}:{source_permit_id}
+```
+
+The `source_permit_id` portion routinely contains characters that are
+reserved or unsafe in a URL path segment.
+
+### Encoding requirement — clients MUST `encodeURIComponent`
+
+**Every client MUST percent-encode the `canonical_uid` before placing
+it in the path** (JavaScript: `encodeURIComponent(canonical_uid)`;
+Python: `urllib.parse.quote(canonical_uid, safe="")`). Four hostile
+shape classes appear in real `canonical_uid` values:
+
+| Character | Where it appears | Encoded form |
+|-----------|------------------|--------------|
+| `:` | Jurisdiction separator — **every** `canonical_uid` | `%3A` |
+| `\|` | NYC scaffold/class separator (e.g. `Suspended Scaffold`) | `%7C` |
+| ` ` (space) | Austin (e.g. `2026-066944 PP`), Orlando | `%20` |
+| `/` | Orlando (e.g. `BLD23/00099`), fort_worth, philadelphia | `%2F` |
+
+Worked examples:
+
+```
+# atlanta — colon only
+canonical_uid = "259:BT-202601090"
+encoded       = "259%3ABT-202601090"
+URL           = https://api.permitcore.io/v1/permits/by-canonical-uid/259%3ABT-202601090
+
+# nyc — colon + pipe + space
+canonical_uid = "1:982522764|Sidewalk Shed"
+encoded       = "1%3A982522764%7CSidewalk%20Shed"
+URL           = https://api.permitcore.io/v1/permits/by-canonical-uid/1%3A982522764%7CSidewalk%20Shed
+
+# orlando — colon + slash sub-path
+canonical_uid = "182:BLD23/00099"
+encoded       = "182%3ABLD23%2F00099"
+URL           = https://api.permitcore.io/v1/permits/by-canonical-uid/182%3ABLD23%2F00099
+
+# austin — colon + numeric + space + suffix
+canonical_uid = "85:2026-066944 PP"
+encoded       = "85%3A2026-066944%20PP"
+URL           = https://api.permitcore.io/v1/permits/by-canonical-uid/85%3A2026-066944%20PP
+```
+
+Skipping the encode is the most common integration mistake: an
+unencoded `/` will be parsed as a path-segment break, and an unencoded
+`|` or space is invalid in a URL path segment per RFC 3986. The server
+returns `400 Malformed canonical_uid` for the shapes it can detect at
+parse time, and falls through to `404` for shapes that produce a
+valid-looking but non-matching key.
+
+## Response shape
+
+Identical to `PermitResponse` on [`/v1/permits`](/api-reference/permits#response-shape) — 53 fields including the enrichment set (`cohort`, `dq_flags`, top-level PLUTO-derived fields, `description_llm_enriched`). The differences on this endpoint are:
+
+1. **`pluto` is populated** when the row's `parcel_apn` matches a PLUTO `bbl` row (NYC only today). For NYC rows where the parcel does not match a PLUTO row, AND for all non-NYC rows, `pluto` remains `null`.
+2. The response body is the single row object — not wrapped in `items: [...]` — and there is no `pagination` envelope.
+
+```json
+{
+  "id": 4218034,
+  "jurisdiction_slug": "nyc",
+  "source_permit_id": "BT-202601090",
+  "canonical_uid": "1:BT-202601090",
+
+  "address_full": "82 ASP 1ST FLOOR, Manhattan, NY 10009",
+  "parcel_apn": "1004920019",
+  "lat": 40.7271,
+  "lng": -73.9836,
+
+  "permit_type_normalized": "alteration",
+  "work_class": "alteration_minor",
+
+  "year_built": 1925,
+  "building_class": "O4",
+  "zoning_district": "C6-2",
+  "lot_area": 2540,
+  "units_total": null,
+
+  "issued_date": "2026-05-27",
+  "current_status": "issued",
+  "description_raw": "Interior reno @ unit 3R; partition + finishes; no MEP scope",
+
+  "contractor_name": "MIDTOWN BUILD CO INC",
+  "source_url": "https://www.nyc.gov/site/buildings/permit/BT-202601090",
+
+  "cohort": "commercial_alteration",
+  "dq_flags": {
+    "issued_date_is_parse_bug": false,
+    "issued_date_is_placeholder": false,
+    "issued_date_is_future_dated": false,
+    "valuation_usd_is_placeholder": false,
+    "valuation_usd_is_oob": false,
+    "units_residential_is_placeholder": false,
+    "units_total_is_placeholder": false,
+    "units_residential_is_oob": false,
+    "units_total_is_oob": false,
+    "units_commercial_is_placeholder": false,
+    "geocode_is_sentinel": false,
+    "geocode_is_oob": false
+  },
+  "pluto": {
+    "is_placeholder": false,
+    "oob": false
+  }
+}
+```
+
+Elided fields above resolve from the same `PermitResponse` schema — see [the listing endpoint's response shape](/api-reference/permits#response-shape) for the full field list.
+
+### The nested `pluto` object semantics
+
+`pluto` reports the PLUTO join + per-flag DQ status, not the PLUTO
+values themselves (those are denormalized into top-level fields like
+`year_built`, `building_class`).
+
+- `is_placeholder` — `year_built` flagged as a placeholder in PLUTO.
+- `oob` — `year_built` flagged as out-of-bounds in PLUTO.
+
+Per the SD-039 semantic, both default to `false` when the join landed
+but the upstream PLUTO DQ flag was NULL (the *"rule has not flagged
+this value"* meaning). `pluto: null` (the field itself) means the join
+didn't land at all — either non-NYC, or no `parcel_apn` ↔ `bbl` match.
+
+## Errors
+
+All error responses follow [RFC 9457 problem+json](https://datatracker.ietf.org/doc/html/rfc9457) — see [Errors](/errors) for the envelope.
+
+### `400 Malformed canonical_uid`
+
+Returned when the path segment can be parsed but doesn't conform to
+the `{jurisdiction_id}:{source_permit_id}` shape (e.g. missing the `:`
+separator, or `jurisdiction_id` is non-numeric).
+
+```json
+{
+  "type": "https://api.permitcore.io/errors/malformed-canonical-uid",
+  "title": "Malformed canonical_uid",
+  "status": 400,
+  "detail": "Expected {jurisdiction_id}:{source_permit_id}; got 'abc-xyz'."
+}
+```
+
+### `404 Permit not found`
+
+Returned when the `canonical_uid` is well-formed but no matching permit
+exists.
+
+```json
+{
+  "type": "https://api.permitcore.io/errors/permit-not-found",
+  "title": "Permit not found",
+  "status": 404,
+  "detail": "No permit matched canonical_uid '999:UNKNOWN-9999'."
+}
+```
+
+### `422 Validation Error`
+
+Returned when the `canonical_uid` is path-parameter-invalid (rare —
+typically caught at the framework layer before the endpoint runs).
+
+## Quotas
+
+Quotas are tier-based and apply to every successful request against
+this endpoint. See [Rate limits](/concepts/rate-limits) for the matrix
++ the `X-RateLimit-*` response headers + the 429 problem+json shape.
+
+## Example request
+
+```bash
+# canonical_uid: "1:BT-202601090" — pre-encoded
+curl "https://api.permitcore.io/v1/permits/by-canonical-uid/1%3ABT-202601090" \
+  -H "Authorization: Bearer $PERMITCORE_API_KEY" \
+  -H "Accept: application/json"
+```
+
+JavaScript / TypeScript:
+
+```ts
+const canonicalUid = "1:982522764|Sidewalk Shed"; // NYC scaffold-class shape
+const url = `https://api.permitcore.io/v1/permits/by-canonical-uid/${encodeURIComponent(canonicalUid)}`;
+const res = await fetch(url, {
+  headers: {
+    Accept: "application/json",
+    Authorization: `Bearer ${process.env.PERMITCORE_API_KEY}`,
+  },
+});
+if (res.status === 404) return null;
+if (!res.ok) throw new Error(`PD-7 lookup failed: ${res.status}`);
+const permit = await res.json();
+```
+
+Python:
+
+```python
+import os, urllib.parse, requests
+
+canonical_uid = "182:BLD23/00099"  # orlando slash shape
+url = f"https://api.permitcore.io/v1/permits/by-canonical-uid/{urllib.parse.quote(canonical_uid, safe='')}"
+r = requests.get(url, headers={
+    "Authorization": f"Bearer {os.environ['PERMITCORE_API_KEY']}",
+    "Accept": "application/json",
+})
+if r.status_code == 404:
+    permit = None
+else:
+    r.raise_for_status()
+    permit = r.json()
+```
+
+## Related
+
+- [Permits (listing endpoint)](/api-reference/permits) — the paginated browse path.
+- [Data freshness → field-level DQ flags](/concepts/data-freshness#field-level-data-quality-flags) — the 12-key `dq_flags` registry + the SD-039 semantic.
+- [Cohorts](/concepts/cohorts) — the 18-cohort taxonomy that `cohort` draws from.
