@@ -46,25 +46,41 @@ webhook event stream is on the roadmap and not yet available.
 
 ## Field-level data-quality flags
 
-Every permit row carries up to 12 data-quality flags surfaced per field.
-These tell you which fields are measured vs inferred vs placeholder:
+Every permit row carries a 12-key `dq_flags` object surfaced per field.
+The flags come from the **WS-PE-DQ-2 bounds-rule registry** and tell you
+which fields the pipeline's rules flagged as suspect — `false` on a flag
+means *the rule has not flagged this value*, NOT *the value was
+independently verified clean* (the SD-039 semantic).
 
-| Flag | Meaning |
-|------|---------|
-| `val_zero` | Valuation column is 0; treat as missing not as $0 |
-| `val_missing` | Valuation absent from source data |
-| `roof_estimated` | Roof area estimated via parcel join; not measured |
-| `roof_missing` | Roof area unavailable |
-| `addr_unmatched` | Address didn't match the parcel layer; geometry absent |
-| `type_ambiguous` | Permit type couldn't be cleanly classified to one cohort |
-| ...and 6 more (see [`/v1/permits` reference](/api-reference/permits)) | |
+NULL silver flag values are coerced to `false` per the same SD-039 rule.
+All 12 keys are always present when `dq_flags` is non-null.
 
-DQ flags are pipeline-defined today and exposed via the upstream
-recency artifact that powers the site's recency surfaces. They are
-**not yet emitted on `GET /v1/permits`** — that emission lands with
-the enrichment promotion (alongside `cohort` + the nested `pluto`
-object). Watch the [changelog](/changelog) for the promotion
-announcement.
+| Flag | What it flags |
+|------|---------------|
+| `issued_date_is_parse_bug` | `issued_date` came through a known adapter parse bug |
+| `issued_date_is_placeholder` | `issued_date` looks like a placeholder (e.g. `1900-01-01`) |
+| `issued_date_is_future_dated` | `issued_date` is in the future |
+| `valuation_usd_is_placeholder` | `valuation_usd` looks like a placeholder (e.g. `$1`, `$0`) |
+| `valuation_usd_is_oob` | `valuation_usd` is out of plausible bounds |
+| `units_residential_is_placeholder` | `units_residential` looks like a placeholder |
+| `units_residential_is_oob` | `units_residential` is out of plausible bounds |
+| `units_commercial_is_placeholder` | `units_commercial` looks like a placeholder |
+| `units_total_is_placeholder` | `units_total` looks like a placeholder |
+| `units_total_is_oob` | `units_total` is out of plausible bounds |
+| `geocode_is_sentinel` | `lat`/`lng` is a sentinel value (e.g. metro centroid) |
+| `geocode_is_oob` | `lat`/`lng` is outside the jurisdiction's bounding box |
+
+The `dq_flags` object is emitted today on both
+[`GET /v1/permits`](/api-reference/permits) and
+[`GET /v1/permits/by-canonical-uid/{canonical_uid}`](/api-reference/permits-by-canonical-uid),
+landed with the 2026-06-04 enrichment promotion — see the
+[changelog](/changelog).
+
+For NYC permits the detail endpoint also returns a nested `pluto`
+object (`{is_placeholder, oob}`) reporting the PLUTO parcel-data
+presence + DQ status with the same SD-039 semantic. That object is
+**list-endpoint NULL by design** — the PLUTO JOIN adds ~75ms p95 and
+disqualifies for the browse path.
 
 ## How freshness interacts with your billing
 

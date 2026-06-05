@@ -35,6 +35,7 @@
           "api-reference/jurisdictions/overview",
           "api-reference/jurisdictions/cohort-distribution",
           "api-reference/permits",
+          "api-reference/permits-by-canonical-uid",
           "api-reference/keys"
         ]
       },
