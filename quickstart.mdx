@@ -24,19 +24,20 @@ export PERMITCORE_API_KEY=pk_...
 
 ## 3. Make your first request
 
-Fetch the cohort distribution for New York City:
+Your first call is `/v1/permits` — the core listing endpoint. Fetch recent New
+York City permits (add `&cohort=<segment>` to filter to a segment):
 
 <CodeGroup>
 
 ```bash curl
-curl https://api.permitcore.io/v1/jurisdictions/nyc/cohorts/distribution \
+curl "https://api.permitcore.io/v1/permits?jurisdiction=nyc&per_page=10" \
   -H "Authorization: Bearer $PERMITCORE_API_KEY" \
   -H "Accept: application/json"
 ```
 
 ```js Node.js
 const res = await fetch(
-  "https://api.permitcore.io/v1/jurisdictions/nyc/cohorts/distribution",
+  "https://api.permitcore.io/v1/permits?jurisdiction=nyc&per_page=10",
   {
     headers: {
       Authorization: `Bearer ${process.env.PERMITCORE_API_KEY}`,
@@ -45,7 +46,7 @@ const res = await fetch(
   },
 );
 const data = await res.json();
-console.log(data.cohort_distribution);
+console.log(data.items);
 ```
 
 ```python Python
@@ -53,65 +54,50 @@ import os
 import httpx
 
 r = httpx.get(
-    "https://api.permitcore.io/v1/jurisdictions/nyc/cohorts/distribution",
+    "https://api.permitcore.io/v1/permits",
+    params={"jurisdiction": "nyc", "per_page": 10},
     headers={
         "Authorization": f"Bearer {os.environ['PERMITCORE_API_KEY']}",
         "Accept": "application/json",
     },
 )
 r.raise_for_status()
-print(r.json()["cohort_distribution"])
+print(r.json()["items"])
 ```
 
 </CodeGroup>
 
 ## 4. Read the response
 
-You'll get back the jurisdiction's canonical 18-cohort breakdown:
+You'll get back a page of permits in `items`, plus `pagination`:
 
 ```json
 {
-  "jurisdiction_slug": "nyc",
-  "jurisdiction_display_name": "New York City, NY",
-  "as_of_utc": "2026-05-24T02:00:00Z",
-  "total_target_permits": 3218856,
-  "cohort_distribution": {
-    "multifamily_alteration": 2474522,
-    "temporary_construction_support": 146420,
-    "commercial_alteration": 119800,
-    "multifamily_new": 73200,
-    "commercial_demolition": 50100,
-    "commercial_new": 38400,
-    "commercial_mep": 27200,
-    "commercial_signage": 18900,
-    "residential_alteration": 14820,
-    "residential_demolition": 9840,
-    "residential_mep": 8400,
-    "residential_new_sf": 6240,
-    "commercial_pool": 3920,
-    "industrial_new": 2840,
-    "civic": 1820,
-    "commercial_shell_only": 1200,
-    "adu_qualifying": 380,
-    "residential_foundation_only": 248
-  }
+  "items": [
+    {
+      "canonical_uid": "1:BT-202601090",
+      "jurisdiction_slug": "nyc",
+      "address_full": "82 ASP 1ST FLOOR, Manhattan, NY 10009",
+      "permit_type_normalized": "alteration",
+      "work_class": "alteration_minor",
+      "cohort": "commercial_alteration",
+      "valuation_usd": 18400,
+      "issued_date": "2026-05-27"
+    }
+  ],
+  "pagination": { "page": 1, "per_page": 10, "has_more": true }
 }
 ```
 
-`total_target_permits` is the **buyer-targeted matview slice** for the
-jurisdiction — lifetime accumulation (no time window) of permits that
-match PermitCore's matview filter (commercial / mixed / industrial work
-classes, OR ≥5 residential units, OR explicit multifamily, OR qualifying
-ADU). The sum of `cohort_distribution` values is **less than**
-`total_target_permits` by the implicit NULL-segment count: permits that
-pass the matview filter but didn't match any of the 18 cohort CASE
-branches. For NYC, the full silver permit table holds ~7.63M permits
-across all work types; the matview targets ~3.22M of those as the
-buyer-relevant slice — see [the explainer in the API reference](/api-reference/jurisdictions/cohort-distribution#what-is-total_target_permits)
-for the full data model.
+Each permit carries a rich, structured record — address + geocode,
+classification (`cohort`, `work_class`, `permit_type_normalized`), scope,
+valuation, contractor, dates, data-quality flags, and enrichment. See
+[GET /v1/permits](/api-reference/permits) for the full field list and every
+query parameter. Add `&cohort=<segment>` to filter to a segment, or paginate
+with `&page=`.
 
-All 18 canonical cohorts are always present (zero-filled if a jurisdiction
-has no rows in that cohort).
+Want the per-segment counts for a jurisdiction instead of the permit rows? Use
+[GET /v1/jurisdictions/{slug}/cohorts/distribution](/api-reference/jurisdictions/cohort-distribution).
 
 ## 5. What next
 
@@ -139,5 +125,5 @@ has no rows in that cohort).
   shapes + the [errors page](/errors) for retry semantics.
 - For account, billing, or integration support, email
   <a href="mailto:kian@permitcore.io">kian@permitcore.io</a> — include
-  your key prefix (first 12 characters) and the `x-permitcore-request-id`
+  your key prefix (first 12 characters) and the `x-request-id`
   from the failing response for fastest triage.

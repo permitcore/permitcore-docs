@@ -13,13 +13,14 @@ This documentation covers the public **`v1` HTTP API** at `https://api.permitcor
 ## What's live today
 
 <CardGroup cols={2}>
+  <Card title="Permits (list + filter)" icon="database" href="/api-reference/permits">
+    `GET /v1/permits?jurisdiction=&cohort=&issued_after=&per_page=&page=` — the
+    core endpoint and your first call: paginated permit rows with field-level
+    DQ flags.
+  </Card>
   <Card title="Cohort distribution" icon="chart-pie" href="/api-reference/jurisdictions/cohort-distribution">
     `GET /v1/jurisdictions/{slug}/cohorts/distribution` — per-jurisdiction
-    breakdown across the canonical 18 cohorts. Cached 1 hour upstream.
-  </Card>
-  <Card title="Permits (list + filter)" icon="database" href="/api-reference/permits">
-    `GET /v1/permits?jurisdiction=&cohort=&issued_after=&per_page=&page=` —
-    paginated permit rows with field-level DQ flags.
+    breakdown across the segment taxonomy. Cached 1 hour upstream.
   </Card>
   <Card title="API key management" icon="key" href="/api-reference/keys">
     Programmatic key creation, listing, revocation, and per-key usage telemetry.

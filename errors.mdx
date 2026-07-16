@@ -3,49 +3,58 @@ title: "Errors"
 description: "Canonical error codes, response shape, and retry guidance for every non-2xx response."
 ---
 
-PermitCore returns a uniform error envelope for every non-2xx response:
+PermitCore returns an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)
+`application/problem+json` body for every non-2xx response:
 
 ```json
 {
-  "error": {
-    "code": "missing_credentials",
-    "message": "Missing Authorization: Bearer <key> header.",
-    "detail": null
-  }
+  "type": "https://docs.permitcore.io/errors/missing-credentials",
+  "title": "Missing Credentials",
+  "status": 401,
+  "detail": "Missing Authorization: Bearer <key> header.",
+  "instance": "/v1/permits",
+  "request_id": "req_1f07fb45782b445e9f6312ba23921234"
 }
 ```
 
-`detail` may be `null` or an object with structured fields specific to the
-error code (e.g., `rate_limited` returns `{ limit_per_month, used, resets_at }`).
+**Branch your error handling on `type`** (a stable URI), not on `title` or
+`detail` (human-readable, may change). `status` mirrors the HTTP status;
+`instance` is the request path; `request_id` also appears as the `x-request-id`
+response header — include it in support requests.
 
 ## Error catalog
 
+The `type` URI ends in the slug shown below; each links to a page explaining the
+error and how to fix it.
+
 ### 401 Unauthorized
 
-| Code | Cause | Retry? |
-|------|-------|--------|
-| `missing_credentials` | `Authorization` header absent | No — fix client and resubmit |
-| `invalid_token` | Key is malformed, revoked, or unknown | No — rotate key via dashboard |
-| `expired_token` | Magic-link sign-in token expired (10 min default) | No — request a new sign-in link |
+| `type` slug | Cause | Retry? |
+|-------------|-------|--------|
+| [`missing-credentials`](/errors/missing-credentials) | `Authorization` header absent | No — fix client and resubmit |
+| [`invalid-credentials`](/errors/invalid-credentials) | Key is malformed, revoked, or unknown | No — rotate key via dashboard |
+
+Auth is checked before the resource, so a bad key returns `invalid-credentials`
+even on an unknown path or jurisdiction.
 
 ### 403 Forbidden
 
-| Code | Cause | Retry? |
-|------|-------|--------|
-| `insufficient_scope` | Key is valid but lacks the scope required for this endpoint | No — request a key with the needed scope |
-| `tier_restricted` | Endpoint or query parameter requires a higher subscription tier | No — upgrade tier or remove parameter |
+| `type` slug | Cause | Retry? |
+|-------------|-------|--------|
+| `insufficient-scope` | Key is valid but lacks the scope required for this endpoint | No — request a key with the needed scope |
+| `tier-restricted` | Endpoint or query parameter requires a higher subscription tier | No — upgrade tier or remove parameter |
 
 ### 404 Not Found
 
-| Code | Cause | Retry? |
-|------|-------|--------|
-| `http_404` | Path doesn't exist OR jurisdiction is DEPLOY-PENDING | No — verify slug + endpoint |
+| `type` slug | Cause | Retry? |
+|-------------|-------|--------|
+| `not-found` | Path or resource doesn't exist, OR the jurisdiction is DEPLOY-PENDING | No — verify slug + endpoint |
 
 ### 429 Too Many Requests
 
-| Code | Cause | Retry? |
-|------|-------|--------|
-| `rate_limited` | Quota exhausted | Yes — respect `Retry-After` header |
+| `type` slug | Cause | Retry? |
+|-------------|-------|--------|
+| `monthly-requests-quota-exceeded` / `daily-requests-quota-exceeded` | Quota exhausted (see [Rate limits](/concepts/rate-limits)) | Yes — respect `Retry-After` header |
 | `burst_limited` | Per-second burst threshold exceeded (future, Bucket 2) | Yes — exponential backoff |
 
 When `Retry-After` is large (multiple hours), the quota has been exhausted
@@ -54,12 +63,15 @@ for the period. Bring the key up a tier or wait for the period to reset
 
 ### 5xx Server errors
 
-| HTTP | Code | Cause | Retry? |
-|------|------|-------|--------|
-| `500` | `internal_error` | Unexpected pipeline issue | Yes — exponential backoff, alert oncall after 3 retries |
-| `502` | `upstream_gateway` | API gateway can't reach origin | Yes — exponential backoff |
-| `503` | `service_unavailable` | Origin marked unhealthy | Yes — exponential backoff |
-| `504` | `gateway_timeout` | Upstream took too long | Yes — exponential backoff |
+Retry 5xx on the HTTP `status` (below) with exponential backoff — don't branch
+on the `type` slug for server errors.
+
+| HTTP | Cause | Retry? |
+|------|-------|--------|
+| `500` | Unexpected pipeline issue | Yes — exponential backoff, alert oncall after 3 retries |
+| `502` | API gateway can't reach origin | Yes — exponential backoff |
+| `503` | Origin marked unhealthy | Yes — exponential backoff |
+| `504` | Upstream took too long | Yes — exponential backoff |
 
 ## Retry guidance
 
@@ -71,10 +83,11 @@ be retried — fix the request and resubmit.
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 
 class PermitcoreError extends Error {
-  constructor(status, code, message) {
-    super(message);
+  constructor(status, type, detail) {
+    super(detail);
     this.status = status;
-    this.code = code;
+    // Stable identifier to branch on — e.g. ".../errors/invalid-credentials".
+    this.type = type;
   }
 }
 
@@ -86,8 +99,9 @@ async function callPermitcore(path) {
     },
   });
   if (!res.ok) {
+    // RFC 9457 problem+json: { type, title, status, detail, instance, request_id }
     const body = await res.json().catch(() => ({}));
-    throw new PermitcoreError(res.status, body?.error?.code, body?.error?.message);
+    throw new PermitcoreError(res.status, body?.type, body?.detail);
   }
   return res.json();
 }
@@ -114,7 +128,7 @@ const data = await withRetries(() => callPermitcore("/v1/jurisdictions/nyc/cohor
 
 ## Diagnosing in production
 
-- Every response includes a `x-permitcore-request-id` header (UUID).
+- Every response includes a `x-request-id` header (UUID).
   Include it in any support ticket — we can trace per-request.
 - Vercel deploy logs surface `[cohort-distribution] <slug>: <error_type>`
   for any caching layer failures.

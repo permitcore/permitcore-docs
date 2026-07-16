@@ -173,14 +173,17 @@ When **not** to use `total_target_permits`:
 
 ## Errors
 
-| HTTP | Code | Cause |
-|------|------|-------|
-| `401` | `missing_credentials` | No `Authorization` header |
-| `401` | `invalid_token` | Key malformed / revoked |
-| `403` | `insufficient_scope` | Key lacks `query` scope |
-| `404` | `http_404` | Unknown slug OR DEPLOY-PENDING metro |
-| `429` | `rate_limited` | Monthly quota exhausted (see [Rate limits](/concepts/rate-limits)) |
-| `500` | `internal_error` | Upstream pipeline issue; retry after backoff |
+Errors are [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)
+`application/problem+json` — branch on the `type` slug (see [Errors](/errors)):
+
+| HTTP | `type` slug | Cause |
+|------|-------------|-------|
+| `401` | `missing-credentials` | No `Authorization` header |
+| `401` | `invalid-credentials` | Key malformed / revoked |
+| `403` | `insufficient-scope` | Key lacks `query` scope |
+| `404` | `not-found` | Unknown slug OR DEPLOY-PENDING metro |
+| `429` | `monthly-requests-quota-exceeded` | Monthly quota exhausted (see [Rate limits](/concepts/rate-limits)) |
+| `500` | `internal-error` | Upstream pipeline issue; retry after backoff |
 
 ## Caching
 

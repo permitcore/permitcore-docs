@@ -47,13 +47,16 @@ followed by a fresh create.
 
 ## Error responses for auth failures
 
-| HTTP | Error code | When |
-|------|------------|------|
-| `401` | `missing_credentials` | No `Authorization` header sent |
-| `401` | `invalid_token` | Header sent but key is malformed / revoked / unknown |
-| `403` | `insufficient_scope` | Key is valid but lacks scope for this endpoint |
+Auth failures are [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)
+`application/problem+json`; branch on the `type` slug:
 
-See [Errors](/errors) for full error response shape + retry guidance.
+| HTTP | `type` slug | When |
+|------|-------------|------|
+| `401` | [`missing-credentials`](/errors/missing-credentials) | No `Authorization` header sent |
+| `401` | [`invalid-credentials`](/errors/invalid-credentials) | Header sent but key is malformed / revoked / unknown |
+| `403` | `insufficient-scope` | Key is valid but lacks scope for this endpoint |
+
+See [Errors](/errors) for the full response shape + retry guidance.
 See [Data licensing](/concepts/data-licensing) for commercial-use terms
 once your key is active.
 
