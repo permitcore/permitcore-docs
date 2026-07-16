@@ -60,7 +60,7 @@ Retry-After: 3600
 Content-Type: application/problem+json
 
 {
-  "type": "https://api.permitcore.io/errors/monthly-requests-quota-exceeded",
+  "type": "https://docs.permitcore.io/errors/monthly-requests-quota-exceeded",
   "title": "Monthly request quota exceeded",
   "detail": "You have used 100000 of 100000 requests for the current monthly window.",
   "retry_after_seconds": 3600,
@@ -78,7 +78,7 @@ Content-Type: application/problem+json
 
 | Field | Type | Contractual? | Meaning |
 | --- | --- | --- | --- |
-| `type` | URI string | **YES** | Stable identifier. Pattern: `https://api.permitcore.io/errors/{daily\|monthly}-{requests\|exports}-quota-exceeded`. Branch your error-handling on this URI, not on `title`/`detail`. |
+| `type` | URI string | **YES** | Stable identifier. Pattern: `https://docs.permitcore.io/errors/{daily\|monthly}-{requests\|exports}-quota-exceeded`. Branch your error-handling on this URI, not on `title`/`detail`. |
 | `title` | string | NO — illustrative only | Short human-readable summary. **Not contractual** — prose may change without notice. |
 | `detail` | string | NO — illustrative only | Longer human-readable explanation, often with the binding numbers inlined. **Not contractual.** |
 | `retry_after_seconds` | integer | **YES** | Seconds to wait before the next request is likely to succeed. Equals the `Retry-After` header. Matches `X-RateLimit-Reset` (kind-aware). |
