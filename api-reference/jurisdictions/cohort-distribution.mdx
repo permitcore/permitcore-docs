@@ -1,10 +1,10 @@
 ---
 title: "GET /v1/jurisdictions/{slug}/cohorts/distribution"
-description: "Per-jurisdiction breakdown across the canonical 18 cohorts. Cached 1 hour."
+description: "Per-jurisdiction breakdown across the canonical 22 cohorts. Cached 1 hour."
 api: "GET https://api.permitcore.io/v1/jurisdictions/{slug}/cohorts/distribution"
 ---
 
-Returns the canonical 18-cohort permit distribution for a single jurisdiction.
+Returns the canonical 22-cohort permit distribution for a single jurisdiction.
 
 The response is **always 18 keys** — cohorts with no permits are zero-filled.
 Counts reflect the rolling-window total permits classified to each cohort
@@ -43,7 +43,7 @@ for that jurisdiction as of the `as_of_utc` timestamp.
   filter but didn't match any of the 18 cohort CASE branches).
 </ResponseField>
 <ResponseField name="cohort_distribution" type="object">
-  Map of `{ cohort_slug: integer_count }` for all 18 canonical cohorts.
+  Map of `{ cohort_slug: integer_count }` for all 22 canonical cohorts.
   Always 18 keys; zero-filled when absent.
 </ResponseField>
 
@@ -148,7 +148,7 @@ Silver permits table (NYC: ~7.63M; all types, all time)
 Buyer-targeted slice (NYC: ~3.22M; = total_target_permits)
       │
       ▼  cohort CASE classification
-18 canonical cohorts  +  1 NULL bucket (implicit)
+22 canonical cohorts  +  1 NULL bucket (implicit)
       │
       ▼  aggregation per request
 cohort_distribution response field

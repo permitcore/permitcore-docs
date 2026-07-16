@@ -125,7 +125,7 @@ of the 2026-06-04 promotion. The nested `pluto` DQ-status object is
 
 ### What's on the wire
 
-The list-endpoint shape carries **53 fields** organized as:
+The list-endpoint shape carries **58 fields** organized as:
 
 - **Identity** — `id`, `jurisdiction_slug`, `source_permit_id`, `canonical_uid`, `filing_id`
 - **Address** — `address_full`, `address_street`, `address_city`, `address_state`, `address_zip`, `parcel_apn`
@@ -143,7 +143,7 @@ Most fields are **nullable** — coverage varies by jurisdiction and by upstream
 
 ### Enrichment field semantics
 
-- **`cohort`** — the buyer-targeting bucket the row classifies into, one of the 18 canonical cohorts. `null` = row not in the cohort matview OR in the matview but unsegmented. Identical taxonomy to `target_segment` on `/v1/permits/target`. See [Concepts → Cohorts](/concepts/cohorts).
+- **`cohort`** — the buyer-targeting bucket the row classifies into, one of the 22 canonical cohorts. `null` = row not in the cohort matview OR in the matview but unsegmented. Identical taxonomy to `target_segment` on `/v1/permits/target`. See [Concepts → Cohorts](/concepts/cohorts).
 - **`dq_flags`** — 12-key boolean object from the bounds-rule registry. All 12 keys are always present when this field is non-null. **Semantic note:** `false` means *"the rule has not flagged this value,"* NOT *"the value was independently verified clean."* NULL silver flag values are coerced to `false` per the SD-039 rule. See [Data freshness → field-level DQ flags](/concepts/data-freshness#field-level-data-quality-flags) for the full flag set + semantics.
 - **`description_llm_enriched`** — LLM-extracted feature object (e.g. `scope_summary`, `unit_count`, `square_footage`, `tenant_improvement_flag`). Distinct column from `description_extracted` (which is adapter-populated, per-jurisdiction shape). **Coverage today:** Austin + Chicago `commercial_new` permits only (~17,861 prod rows). Broader cross-metro LLM extraction is on the roadmap.
 
@@ -175,7 +175,7 @@ when known. Only the nested `pluto` *DQ-status* object is detail-only.
 commercial/multifamily/ADU filter via `target_segment=<cohort>`. This is
 the cohort-classified slice that the site's recency surfaces query.
 
-`target_segment` accepts **all 18 canonical cohort slugs**. Behavior:
+`target_segment` accepts **all 22 canonical cohort slugs**. Behavior:
 
 - **Valid cohort with zero rows in window:** `200 OK` with an empty
   `items` array — no `404`. Use `pagination.total_count` to confirm
