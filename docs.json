@@ -43,6 +43,8 @@
         "group": "Reference",
         "pages": [
           "errors",
+          "errors/missing-credentials",
+          "errors/invalid-credentials",
           "changelog"
         ]
       }
