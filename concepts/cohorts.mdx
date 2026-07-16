@@ -1,14 +1,21 @@
 ---
 title: "Cohorts"
-description: "The canonical 18-cohort taxonomy that PermitCore's pipeline classifies every permit into."
+description: "The canonical 22-cohort taxonomy that PermitCore's pipeline classifies every permit into."
 ---
 
-Every permit ingested by PermitCore is classified into one of **18 canonical
-cohorts**. Cohorts are the primary axis for slicing the dataset — by use
+<Note>
+The PermitCore product UI calls these **segments**; the API field and
+endpoint keep the name **`cohort`** (e.g. the `cohort` field on a permit, the
+`/cohorts/distribution` endpoint). Same taxonomy — "segment" (product) and
+"cohort" (API) are interchangeable.
+</Note>
+
+Every permit ingested by PermitCore is classified into one of **22 canonical
+segments**. Segments are the primary axis for slicing the dataset — by use
 type (commercial / residential / industrial / civic) crossed with scope
 (new construction / alteration / demolition / MEP / etc.).
 
-## The 18 canonical cohorts
+## The 22 canonical cohorts
 
 | Slug | Display name | What it covers |
 |------|--------------|----------------|

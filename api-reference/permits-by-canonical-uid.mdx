@@ -75,7 +75,7 @@ valid-looking but non-matching key.
 
 ## Response shape
 
-Identical to `PermitResponse` on [`/v1/permits`](/api-reference/permits#response-shape) — 53 fields including the enrichment set (`cohort`, `dq_flags`, top-level PLUTO-derived fields, `description_llm_enriched`). The differences on this endpoint are:
+Identical to `PermitResponse` on [`/v1/permits`](/api-reference/permits#response-shape) — 58 fields including the enrichment set (`cohort`, `dq_flags`, top-level PLUTO-derived fields, `description_llm_enriched`). The differences on this endpoint are:
 
 1. **`pluto` is populated** when the row's `parcel_apn` matches a PLUTO `bbl` row (NYC only today). For NYC rows where the parcel does not match a PLUTO row, AND for all non-NYC rows, `pluto` remains `null`.
 2. The response body is the single row object — not wrapped in `items: [...]` — and there is no `pagination` envelope.
