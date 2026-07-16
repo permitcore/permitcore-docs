@@ -1,0 +1,142 @@
+---
+title: "Exports"
+description: "Create bulk CSV/XLSX exports of permit data, poll for completion, and download a signed URL. Plus warehouse-native Parquet delivery."
+---
+
+Exports turn a filtered slice of permit data into a downloadable **CSV or XLSX**
+file. They run **asynchronously**: you create a job, poll until it's ready, then
+download a short-lived signed URL.
+
+<Note>
+Export volume is tier-gated: the Free tier includes **5,000 exported rows /
+month**; Pro is **unlimited**. See [Pricing](https://permitcore.io/pricing).
+</Note>
+
+## The export flow
+
+<Steps>
+  <Step title="Create the job">
+    `POST /v1/exports` returns an `export_id` and a `poll_url`.
+  </Step>
+  <Step title="Poll until complete">
+    `GET /v1/exports/{export_id}` until `status` is `completed` (or `failed`).
+  </Step>
+  <Step title="Download">
+    A completed job carries a `signed_url` — fetch it before `expires_at`.
+  </Step>
+</Steps>
+
+## Create an export
+
+`POST /v1/exports` — `application/json` body:
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `cohort` | string | Yes | Segment key to export (e.g. `hvac`, `roofing`, `solar`, `signage`). |
+| `metros` | string[] | Yes | Jurisdiction slugs, e.g. `["chicago_il", "nyc"]`. |
+| `format` | string | Yes | `csv` or `xlsx`. |
+| `date_range` | object | Yes | `{ "start": "YYYY-MM-DD", "end": "YYYY-MM-DD" }` (by issued date). |
+| `expires_in_hours` | integer | No | Signed-URL lifetime; defaults to the service default. |
+
+```bash curl
+curl -X POST https://api.permitcore.io/v1/exports \
+  -H "Authorization: Bearer $PERMITCORE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cohort": "hvac",
+    "metros": ["nyc"],
+    "format": "csv",
+    "date_range": { "start": "2026-01-01", "end": "2026-06-30" }
+  }'
+```
+
+```json 202 Accepted
+{
+  "export_id": "exp_7a1c9f2e",
+  "status": "pending",
+  "poll_url": "/v1/exports/exp_7a1c9f2e"
+}
+```
+
+## Poll an export
+
+`GET /v1/exports/{export_id}` — `status` is one of `pending`, `running`,
+`completed`, `failed`.
+
+```json completed
+{
+  "export_id": "exp_7a1c9f2e",
+  "status": "completed",
+  "signed_url": "https://…r2.dev/exports/exp_7a1c9f2e.csv?…",
+  "expires_at": "2026-07-16T22:00:00Z",
+  "row_count": 4821,
+  "file_size_bytes": 1583204,
+  "error_message": null
+}
+```
+
+While `pending`/`running`, `signed_url` and the size/count fields are `null`.
+On `failed`, `error_message` explains why. Poll with a few seconds of backoff;
+most exports complete in well under a minute.
+
+## List your exports
+
+`GET /v1/exports?limit=&before_id=` — most recent first, keyset-paginated.
+
+```json
+{
+  "items": [
+    {
+      "export_id": "exp_7a1c9f2e",
+      "cohort": "hvac",
+      "metros": ["nyc"],
+      "format": "csv",
+      "status": "completed",
+      "requested_at": "2026-07-16T20:41:00Z",
+      "completed_at": "2026-07-16T20:41:18Z"
+    }
+  ],
+  "next_before_id": null
+}
+```
+
+Pass `next_before_id` back as `before_id` to page older.
+
+## Warehouse-native delivery
+
+`GET /v1/exports/warehouse/latest` returns a manifest of the latest full-dataset
+drop — **Parquet + gzipped CSV** files with signed R2 URLs, for loading straight
+into Snowflake / BigQuery / a lake. This is the bulk alternative to per-query
+exports.
+
+```json
+{
+  "schema_version": 1,
+  "data_as_of": "2026-07-15",
+  "generated_at_utc": "2026-07-16T06:00:00Z",
+  "signed_url_expires_in_hours": 24,
+  "tables": { "…": "…" },
+  "honesty_semantics": { "…": "…" },
+  "files": [
+    {
+      "table": "permits",
+      "format": "parquet",
+      "filename": "permits.parquet",
+      "row_count": 18243110,
+      "bytes": 1364235776,
+      "preserves_tristate_dq_flags": true,
+      "signed_url": "https://…r2.dev/warehouse/permits.parquet?…"
+    }
+  ]
+}
+```
+
+`preserves_tristate_dq_flags` marks files that carry PermitCore's
+true/false/unknown data-quality flags intact (rather than collapsing unknown to
+false) — so the honesty semantics survive the round-trip into your warehouse.
+
+## Errors
+
+Exports use the standard [RFC 9457 problem+json](/errors) shape. A `cohort`,
+`metros`, or `date_range` your key/tier can't export returns `403`
+(`tier-restricted`) or `400`; an unknown `export_id` returns `404` (`not-found`).
