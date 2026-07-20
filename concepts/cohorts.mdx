@@ -1,6 +1,6 @@
 ---
 title: "Cohorts"
-description: "The canonical 22-cohort taxonomy that PermitCore's pipeline classifies every permit into."
+description: "The canonical 23-cohort taxonomy that PermitCore's pipeline classifies every permit into."
 ---
 
 <Note>
@@ -10,13 +10,12 @@ endpoint keep the name **`cohort`** (e.g. the `cohort` field on a permit, the
 "cohort" (API) are interchangeable.
 </Note>
 
-{/* FOUNDER/A: site=22 vs API artifact canonical_cohort_count=23 — cross-repo drift, confirm the canonical taxonomy count. 22 verified against the API's CANONICAL_TARGET_SEGMENTS frozenset (the enum /v1/permits/target validates target_segment against). */}
-Every permit ingested by PermitCore is classified into one of **22 canonical
+Every permit ingested by PermitCore is classified into one of **23 canonical
 segments**. Segments are the primary axis for slicing the dataset — by use
 type (commercial / residential / industrial / civic) crossed with scope
 (new construction / alteration / demolition / MEP / etc.).
 
-## The 22 canonical cohorts
+## The 23 canonical cohorts
 
 | Slug | Display name | What it covers |
 |------|--------------|----------------|
@@ -32,6 +31,7 @@ type (commercial / residential / industrial / civic) crossed with scope
 | `commercial_signage` | Commercial Signage Permits | Wall-mounted, monument, illuminated signs at commercial properties |
 | `industrial_new` | Industrial New Construction | Warehouses, distribution, manufacturing, data centers |
 | `multifamily_alteration` | Multifamily Alteration | Apartment + condo alterations, renovations, envelope work |
+| `multifamily_mep` | Multifamily MEP | Multifamily mechanical, electrical, plumbing systems |
 | `multifamily_new` | Multifamily New Construction | Ground-up apartments + condos — 5+ units, R-2 occupancy |
 | `residential_alteration` | Residential Alteration | Single-family renovations, additions, kitchen/bath remodels |
 | `residential_demolition` | Residential Demolition | Single-family teardowns + accessory-structure demolition |

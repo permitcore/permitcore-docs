@@ -1,13 +1,12 @@
 ---
 title: "GET /v1/jurisdictions/{slug}/cohorts/distribution"
-description: "Per-jurisdiction breakdown across the canonical 22 cohorts. Cached 1 hour."
+description: "Per-jurisdiction breakdown across the canonical 23 cohorts. Cached 1 hour."
 api: "GET https://api.permitcore.io/v1/jurisdictions/{slug}/cohorts/distribution"
 ---
 
 Returns the canonical cohort permit distribution for a single jurisdiction.
 
-{/* FOUNDER/A: site=22 vs API artifact canonical_cohort_count=23 — cross-repo drift, confirm the canonical taxonomy count (target_segment enum verified = 22) */}
-The response carries **one key per canonical segment (22 today)** — segments with
+The response carries **one key per canonical segment (23 today)** — segments with
 no permits are zero-filled. Counts reflect the rolling-window total permits
 classified to each segment for that jurisdiction as of the `as_of_utc` timestamp.
 
@@ -44,7 +43,7 @@ classified to each segment for that jurisdiction as of the `as_of_utc` timestamp
   filter but didn't match any of the segment CASE branches).
 </ResponseField>
 <ResponseField name="cohort_distribution" type="object">
-  Map of `{ segment_slug: integer_count }` for all canonical segments (22
+  Map of `{ segment_slug: integer_count }` for all canonical segments (23
   today). One key per segment; zero-filled when a segment has no permits.
 </ResponseField>
 
@@ -105,6 +104,7 @@ data = r.json()
     "commercial_signage": 18900,
     "industrial_new": 2840,
     "multifamily_alteration": 2474522,
+    "multifamily_mep": 0,
     "multifamily_new": 73200,
     "residential_alteration": 14820,
     "residential_demolition": 9840,
@@ -155,7 +155,7 @@ Silver permits table (NYC: ~7.63M; all types, all time)
 Buyer-targeted slice (NYC: ~3.22M; = total_target_permits)
       │
       ▼  cohort CASE classification
-22 canonical cohorts  +  1 NULL bucket (implicit)
+23 canonical cohorts  +  1 NULL bucket (implicit)
       │
       ▼  aggregation per request
 cohort_distribution response field
