@@ -37,41 +37,61 @@ error and how to fix it.
 Auth is checked before the resource, so a bad key returns `invalid-credentials`
 even on an unknown path or jurisdiction.
 
+### 400 / 422 Bad request
+
+| `type` slug | Cause | Retry? |
+|-------------|-------|--------|
+| [`invalid-request`](/errors/invalid-request) | A query parameter failed validation (response carries an `errors` array) | No — fix the parameter |
+| [`invalid-bbox`](/errors/invalid-bbox) | `bbox` is not `minLon,minLat,maxLon,maxLat` | No — fix the value |
+| [`missing-jurisdiction`](/errors/missing-jurisdiction) | A required geographic filter was omitted | No — add `jurisdiction=` |
+| [`invalid-canonical-uid`](/errors/invalid-canonical-uid) | `canonical_uid` path segment is malformed / not URL-encoded | No — encode + fix shape |
+| [`invalid-target-segment`](/errors/invalid-target-segment) | Unknown `target_segment` value (whitelist in `detail`) | No — use a canonical segment |
+| [`unknown-cohort`](/errors/unknown-cohort) | Unknown per-manufacturer `cohort` basename on `/v1/permits/target` | No — use a known cohort |
+| [`filter-required`](/errors/filter-required) | Rollup submitted with no narrowing filter | No — add a filter |
+| [`group-cardinality-exceeded`](/errors/group-cardinality-exceeded) | Grouping would return too many rows | No — narrow / coarsen `group_by` |
+
 ### 403 Forbidden
 
 | `type` slug | Cause | Retry? |
 |-------------|-------|--------|
-| `insufficient-scope` | Key is valid but lacks the scope required for this endpoint | No — request a key with the needed scope |
-| `tier-restricted` | Endpoint or query parameter requires a higher subscription tier | No — upgrade tier or remove parameter |
+| [`missing-scope`](/errors/missing-scope) | Key is valid but lacks the scope required for this endpoint | No — request a key with the needed scope |
 
 ### 404 Not Found
 
 | `type` slug | Cause | Retry? |
 |-------------|-------|--------|
-| `not-found` | Path or resource doesn't exist, OR the jurisdiction is DEPLOY-PENDING | No — verify slug + endpoint |
+| [`not-found`](/errors/not-found) | Path or resource doesn't exist, OR the jurisdiction is DEPLOY-PENDING | No — verify slug + endpoint |
+| [`unknown-jurisdiction`](/errors/unknown-jurisdiction) | Jurisdiction slug not in the `jurisdictions` table | No — use a canonical slug |
+| [`permit-not-found`](/errors/permit-not-found) | No permit matched the `permit_id` / `canonical_uid` | No — verify the identifier |
+| [`api-key-not-found`](/errors/api-key-not-found) | Referenced key prefix not owned by this account | No — list your keys |
+| [`export-not-found`](/errors/export-not-found) | Unknown `export_id` | No — verify the id |
 
 ### 429 Too Many Requests
 
 | `type` slug | Cause | Retry? |
 |-------------|-------|--------|
-| `monthly-requests-quota-exceeded` / `daily-requests-quota-exceeded` | Quota exhausted (see [Rate limits](/concepts/rate-limits)) | Yes — respect `Retry-After` header |
-| `burst_limited` | Per-second burst threshold exceeded (future, Bucket 2) | Yes — exponential backoff |
+| [`monthly-requests-quota-exceeded`](/errors/monthly-requests-quota-exceeded) / [`daily-requests-quota-exceeded`](/errors/daily-requests-quota-exceeded) | Request quota exhausted (see [Rate limits](/concepts/rate-limits)) | Yes — respect `Retry-After` |
+| [`monthly-exports-quota-exceeded`](/errors/monthly-exports-quota-exceeded) / [`daily-exports-quota-exceeded`](/errors/daily-exports-quota-exceeded) | Export-row quota exhausted | Yes — respect `Retry-After` |
+| [`export-concurrency-exceeded`](/errors/export-concurrency-exceeded) | Too many concurrent export jobs in flight | Yes — wait for one to finish |
 
-When `Retry-After` is large (multiple hours), the quota has been exhausted
-for the period. Bring the key up a tier or wait for the period to reset
-(monthly quotas reset on the first of each month UTC).
+The emitted quota slug follows the pattern
+`{daily\|monthly}-{requests\|exports}-quota-exceeded`. When `Retry-After` is large
+(multiple hours), the quota has been exhausted for the window. Bring the key up a
+tier or wait for it to reset. **Reset is a trailing 30-day rolling window, not a
+calendar month** — monthly quotas restore *progressively* as usage ages out (the
+`reset_at` field / `X-RateLimit-Reset` header marks the next freed slot). Daily
+quotas restore in full at the next UTC midnight. See [Rate limits](/concepts/rate-limits).
 
 ### 5xx Server errors
 
-Retry 5xx on the HTTP `status` (below) with exponential backoff — don't branch
-on the `type` slug for server errors.
+Retry 5xx on the HTTP `status` (below) with exponential backoff. The `type` slug
+is stable for these too.
 
-| HTTP | Cause | Retry? |
-|------|-------|--------|
-| `500` | Unexpected pipeline issue | Yes — exponential backoff, alert oncall after 3 retries |
-| `502` | API gateway can't reach origin | Yes — exponential backoff |
-| `503` | Origin marked unhealthy | Yes — exponential backoff |
-| `504` | Upstream took too long | Yes — exponential backoff |
+| HTTP | `type` slug | Cause | Retry? |
+|------|-------------|-------|--------|
+| `500` | [`internal-error`](/errors/internal-error) | Unexpected pipeline issue | Yes — exponential backoff, alert oncall after 3 retries |
+| `503` | [`service-unavailable`](/errors/service-unavailable) | Origin marked unhealthy | Yes — exponential backoff |
+| `504` | [`query-timeout`](/errors/query-timeout) | Query exceeded the server-side statement timeout | Yes — narrow filters, then retry |
 
 ## Retry guidance
 

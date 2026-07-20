@@ -16,7 +16,8 @@ buy flow.
 | Pro | $89 / month or $890 / year | 100,000 / month | Unlimited |
 | Enterprise | From $599/mo | Custom | Custom |
 
-All tiers include all 22 cohorts and full history.
+{/* FOUNDER/A: site=22 vs API artifact canonical_cohort_count=23 — cross-repo drift, confirm the canonical taxonomy count (target_segment enum verified = 22) */}
+All tiers include all 22 segments and full history.
 
 Webhook event delivery is on the roadmap and not yet available.
 
@@ -69,8 +70,7 @@ Content-Type: application/problem+json
   "quota_kind": "monthly",
   "tier_name": "pro",
   "tier_quota_daily": null,
-  "tier_quota_monthly": 100000,
-  "legacy_code": "rate_limited"
+  "tier_quota_monthly": 100000
 }
 ```
 
@@ -88,8 +88,13 @@ Content-Type: application/problem+json
 | `tier_name` | string | **YES** | Canonical tier name (`free`, `pro`, `enterprise`). |
 | `tier_quota_daily` | integer \| null | **YES** | The tier's daily ceiling. `null` means **unlimited** on that dimension (Pro + Enterprise have no daily ceiling). |
 | `tier_quota_monthly` | integer \| null | **YES** | The tier's monthly ceiling. `null` means **unlimited**. |
-| `legacy_code` | string | **DEPRECATED** — do not depend on it | Legacy `error.code` value (`rate_limited`) emitted for clients written against the pre-RFC-9457 envelope. It is being removed — **migrate to branching on `type`** and don't rely on this field. |
 | `grandfather_until` | ISO 8601 timestamp | Conditional / rare | Present only when an account is mid-migration between tier configurations. Most responses omit this field. |
+
+<Note>
+The legacy `legacy_code` field (value `"rate_limited"`) that earlier releases
+emitted for pre-RFC-9457 clients was **removed on 2026-06-27**. Branch on the
+`type` URI (and `quota_kind`) instead — it is no longer present in responses.
+</Note>
 
 Title and detail are **illustrative** — the example body shows representative
 prose, but title/detail may change without notice. Always branch on `type`;
@@ -146,15 +151,15 @@ narrative. The retry mechanics are the same either way.
 3. **Watch `X-RateLimit-Remaining-Requests`** on 2xx responses — back off
    *before* the 429 fires.
 
-## Migration: away from `legacy_code`
+## Migration: the removed `legacy_code` field
 
 The `legacy_code` field (`"rate_limited"`) was added at launch for clients
-written against a pre-RFC-9457 error envelope shape. **It is deprecated and
-being removed — do not depend on it.** To migrate:
+written against a pre-RFC-9457 error envelope shape. **It was removed on
+2026-06-27 and is no longer emitted.** If any client still branches on it:
 
-- Move any client logic branching on `error.code === "rate_limited"` to
-  branching on `type` (URI) instead.
+- Move logic that branched on `error.code === "rate_limited"` to branching on
+  the `type` URI instead.
 - The `type` URI pattern is stable: `…/errors/{daily|monthly}-{requests|exports}-quota-exceeded`.
 - As a fallback, branch on HTTP status `429` plus the `X-RateLimit-*` headers.
 
-Watch the [changelog](/changelog) for the removal notice.
+See the [changelog](/changelog) for the removal note.

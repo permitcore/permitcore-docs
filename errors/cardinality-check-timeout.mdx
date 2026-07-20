@@ -1,0 +1,34 @@
+---
+title: "Cardinality check timed out"
+description: "504 — The pre-flight cardinality check exceeded its timeout."
+---
+
+The pre-flight cardinality check exceeded its timeout.
+
+```json 504 application/problem+json
+{
+  "type": "https://docs.permitcore.io/errors/cardinality-check-timeout",
+  "title": "Cardinality check timed out",
+  "status": 504,
+  "detail": "…",
+  "instance": "/v1/territory/rollup",
+  "request_id": "req_1f07fb45782b445e9f6312ba23921234"
+}
+```
+
+Every PermitCore error is [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)
+`application/problem+json`. **Branch on `type` (a stable URI)**, not on `title`
+or `detail` (human-readable, may change).
+
+## When it occurs
+
+The guard that estimates result cardinality before running an aggregation exceeded its own timeout — usually a sign the filters are too broad.
+
+## How to fix
+
+Narrow the filters and retry.
+
+**Retryable** — retry with exponential backoff (respect `Retry-After` on `429`/`503`).
+
+See the full [error catalog](/errors) for the response shape and retry matrix.
+Every response carries an `x-request-id` header — include it in any support request.

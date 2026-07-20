@@ -150,7 +150,7 @@ didn't land at all — either non-NYC, or no `parcel_apn` ↔ `bbl` match.
 
 All error responses follow [RFC 9457 problem+json](https://datatracker.ietf.org/doc/html/rfc9457) — see [Errors](/errors) for the envelope.
 
-### `400 Malformed canonical_uid`
+### `400 Invalid canonical_uid`
 
 Returned when the path segment can be parsed but doesn't conform to
 the `{jurisdiction_id}:{source_permit_id}` shape (e.g. missing the `:`
@@ -158,8 +158,8 @@ separator, or `jurisdiction_id` is non-numeric).
 
 ```json
 {
-  "type": "https://docs.permitcore.io/errors/malformed-canonical-uid",
-  "title": "Malformed canonical_uid",
+  "type": "https://docs.permitcore.io/errors/invalid-canonical-uid",
+  "title": "Invalid canonical_uid",
   "status": 400,
   "detail": "Expected {jurisdiction_id}:{source_permit_id}; got 'abc-xyz'."
 }

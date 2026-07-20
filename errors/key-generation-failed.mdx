@@ -1,0 +1,34 @@
+---
+title: "Key generation failed"
+description: "500 — The API could not mint a new key."
+---
+
+The API could not mint a new key.
+
+```json 500 application/problem+json
+{
+  "type": "https://docs.permitcore.io/errors/key-generation-failed",
+  "title": "Key generation failed",
+  "status": 500,
+  "detail": "…",
+  "instance": "/v1/keys",
+  "request_id": "req_1f07fb45782b445e9f6312ba23921234"
+}
+```
+
+Every PermitCore error is [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)
+`application/problem+json`. **Branch on `type` (a stable URI)**, not on `title`
+or `detail` (human-readable, may change).
+
+## When it occurs
+
+An internal error occurred while generating a new API key. No key was created.
+
+## How to fix
+
+Retry the request. If it persists, email support with the `request_id`.
+
+**Retryable** — retry with exponential backoff (respect `Retry-After` on `429`/`503`).
+
+See the full [error catalog](/errors) for the response shape and retry matrix.
+Every response carries an `x-request-id` header — include it in any support request.

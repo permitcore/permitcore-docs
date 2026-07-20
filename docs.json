@@ -44,8 +44,41 @@
         "group": "Reference",
         "pages": [
           "errors",
-          "errors/missing-credentials",
-          "errors/invalid-credentials",
+          {
+            "group": "Error codes",
+            "pages": [
+              "errors/missing-credentials",
+              "errors/invalid-credentials",
+              "errors/invalid-api-key",
+              "errors/missing-scope",
+              "errors/not-found",
+              "errors/unknown-jurisdiction",
+              "errors/permit-not-found",
+              "errors/invalid-canonical-uid",
+              "errors/invalid-request",
+              "errors/invalid-bbox",
+              "errors/missing-jurisdiction",
+              "errors/invalid-target-segment",
+              "errors/unknown-cohort",
+              "errors/filter-required",
+              "errors/group-cardinality-exceeded",
+              "errors/method-not-allowed",
+              "errors/conflict",
+              "errors/api-key-not-found",
+              "errors/export-not-found",
+              "errors/export-concurrency-exceeded",
+              "errors/monthly-requests-quota-exceeded",
+              "errors/daily-requests-quota-exceeded",
+              "errors/monthly-exports-quota-exceeded",
+              "errors/daily-exports-quota-exceeded",
+              "errors/rate-limit-exceeded",
+              "errors/query-timeout",
+              "errors/cardinality-check-timeout",
+              "errors/service-unavailable",
+              "errors/key-generation-failed",
+              "errors/internal-error"
+            ]
+          },
           "changelog"
         ]
       }

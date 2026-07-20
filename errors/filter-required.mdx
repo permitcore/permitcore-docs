@@ -1,0 +1,34 @@
+---
+title: "Filter required"
+description: "422 — The request must include at least one narrowing filter."
+---
+
+The request must include at least one narrowing filter.
+
+```json 422 application/problem+json
+{
+  "type": "https://docs.permitcore.io/errors/filter-required",
+  "title": "Filter required",
+  "status": 422,
+  "detail": "…",
+  "instance": "/v1/territory/rollup",
+  "request_id": "req_1f07fb45782b445e9f6312ba23921234"
+}
+```
+
+Every PermitCore error is [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)
+`application/problem+json`. **Branch on `type` (a stable URI)**, not on `title`
+or `detail` (human-readable, may change).
+
+## When it occurs
+
+A rollup/aggregation request was submitted without any of the required narrowing filters, which would force a full-dataset scan. The response `detail` lists the acceptable filters.
+
+## How to fix
+
+Add at least one of the listed filters (e.g. `jurisdiction`, `state`, `metro_cbsa`, date range) and resubmit.
+
+**Not retryable** — fix the request before resubmitting; retrying unchanged returns the same error.
+
+See the full [error catalog](/errors) for the response shape and retry matrix.
+Every response carries an `x-request-id` header — include it in any support request.

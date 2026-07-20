@@ -4,11 +4,12 @@ description: "Per-jurisdiction breakdown across the canonical 22 cohorts. Cached
 api: "GET https://api.permitcore.io/v1/jurisdictions/{slug}/cohorts/distribution"
 ---
 
-Returns the canonical 22-cohort permit distribution for a single jurisdiction.
+Returns the canonical cohort permit distribution for a single jurisdiction.
 
-The response is **always 18 keys** — cohorts with no permits are zero-filled.
-Counts reflect the rolling-window total permits classified to each cohort
-for that jurisdiction as of the `as_of_utc` timestamp.
+{/* FOUNDER/A: site=22 vs API artifact canonical_cohort_count=23 — cross-repo drift, confirm the canonical taxonomy count (target_segment enum verified = 22) */}
+The response carries **one key per canonical segment (22 today)** — segments with
+no permits are zero-filled. Counts reflect the rolling-window total permits
+classified to each segment for that jurisdiction as of the `as_of_utc` timestamp.
 
 ## Authentication
 
@@ -40,11 +41,11 @@ for that jurisdiction as of the `as_of_utc` timestamp.
   section below for the matview filter definition. The sum of
   `cohort_distribution` values is **less than** `total_target_permits`
   by the implicit NULL-segment count (permits that pass the matview
-  filter but didn't match any of the 18 cohort CASE branches).
+  filter but didn't match any of the segment CASE branches).
 </ResponseField>
 <ResponseField name="cohort_distribution" type="object">
-  Map of `{ cohort_slug: integer_count }` for all 22 canonical cohorts.
-  Always 18 keys; zero-filled when absent.
+  Map of `{ segment_slug: integer_count }` for all canonical segments (22
+  today). One key per segment; zero-filled when a segment has no permits.
 </ResponseField>
 
 ## Example request
@@ -96,6 +97,7 @@ data = r.json()
     "civic": 1820,
     "commercial_alteration": 119800,
     "commercial_demolition": 50100,
+    "commercial_hvac": 0,
     "commercial_mep": 27200,
     "commercial_new": 38400,
     "commercial_pool": 3920,
@@ -109,15 +111,20 @@ data = r.json()
     "residential_foundation_only": 248,
     "residential_mep": 8400,
     "residential_new_sf": 6240,
+    "residential_pool": 0,
+    "solar_residential": 0,
+    "storage_residential": 0,
     "temporary_construction_support": 146420
   }
 }
 ```
 
-The 18 `cohort_distribution` values sum to 2,998,250 — the remaining
+_(Counts above are illustrative; newer segments are shown zero-filled here.)_
+
+The `cohort_distribution` values sum to 2,998,250 — the remaining
 220,606 permits (matview total 3,218,856 − cohort sum) fall in the
 implicit NULL segment: rows that pass the matview filter but didn't
-match any of the 18 cohort CASE branches in the classifier. See the
+match any of the segment CASE branches in the classifier. See the
 explainer below for the data-model flow.
 
 ## What is `total_target_permits`?
@@ -178,12 +185,12 @@ Errors are [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)
 
 | HTTP | `type` slug | Cause |
 |------|-------------|-------|
-| `401` | `missing-credentials` | No `Authorization` header |
-| `401` | `invalid-credentials` | Key malformed / revoked |
-| `403` | `insufficient-scope` | Key lacks `query` scope |
-| `404` | `not-found` | Unknown slug OR DEPLOY-PENDING metro |
-| `429` | `monthly-requests-quota-exceeded` | Monthly quota exhausted (see [Rate limits](/concepts/rate-limits)) |
-| `500` | `internal-error` | Upstream pipeline issue; retry after backoff |
+| `401` | [`missing-credentials`](/errors/missing-credentials) | No `Authorization` header |
+| `401` | [`invalid-credentials`](/errors/invalid-credentials) | Key malformed / revoked |
+| `403` | [`missing-scope`](/errors/missing-scope) | Key lacks `query` scope |
+| `404` | [`unknown-jurisdiction`](/errors/unknown-jurisdiction) | Unknown slug OR DEPLOY-PENDING metro |
+| `429` | [`monthly-requests-quota-exceeded`](/errors/monthly-requests-quota-exceeded) | Monthly quota exhausted (see [Rate limits](/concepts/rate-limits)) |
+| `500` | [`internal-error`](/errors/internal-error) | Upstream pipeline issue; retry after backoff |
 
 ## Caching
 
