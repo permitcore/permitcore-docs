@@ -3,6 +3,14 @@ title: "Changelog"
 description: "Versioned release notes for the PermitCore API + docs site."
 ---
 
+## 2026-07-20 — `multifamily_mep` is now a filterable `target_segment`
+
+`multifamily_mep` (**Multifamily MEP** — multifamily mechanical, electrical, and
+plumbing systems) was promoted into the API's runtime `target_segment` validator
+(pipeline PR #783). The canonical filterable segment enum on `/v1/permits/target`
+went from **22 → 23**, and `multifamily_mep` is now a valid `target_segment` and
+`cohort` value. All 23 slugs are listed in [Concepts → Cohorts](/concepts/cohorts).
+
 ## 2026-07-18 — Exports API, warehouse-native delivery, territory rollup
 
 Three endpoint families that were live on the wire are now documented and
@@ -33,7 +41,6 @@ The canonical segment taxonomy grew as new cohorts were admitted:
 `residential_pool` (2026-06-26), and `solar_residential`. `target_segment` on
 `/v1/permits/target` now accepts all **22** canonical segment slugs. See
 [Cohorts](/concepts/cohorts).
-{/* FOUNDER/A: site=22 vs API artifact canonical_cohort_count=23 — cross-repo drift, confirm the canonical taxonomy count (target_segment enum verified = 22) */}
 
 ### Error `type` URIs now resolve
 
@@ -71,7 +78,7 @@ The enrichment fields are now on the live wire.
 - **`cohort`** — buyer-targeting bucket; one of the canonical
   segments, or `null` for unsegmented rows. Identical taxonomy to
   `target_segment` on `/v1/permits/target`. (The taxonomy has since
-  grown to 22 — see the 2026-07-18 entry.)
+  grown to 23 — see the 2026-07-20 entry.)
 - **`dq_flags`** — 12-key boolean object from the WS-PE-DQ-2
   bounds-rule registry. **Semantic note (SD-039):** `false` on a flag
   means *"the rule has not flagged this value,"* NOT *"the value was
@@ -184,14 +191,14 @@ First public release.
 ### Live at launch
 
 - **`GET /v1/jurisdictions/{slug}/cohorts/distribution`** — per-jurisdiction
-  cohort breakdown across the canonical segment taxonomy (18 at launch; 22
-  today — see the 2026-07-18 entry). Cached 1 hour upstream
+  cohort breakdown across the canonical segment taxonomy (18 at launch; 23
+  today — see the 2026-07-20 entry). Cached 1 hour upstream
   (`Cache-Control: max-age=3600`).
 - **US metro coverage** across the top metros by permit volume — see the live
   map at [permitcore.io/coverage](https://permitcore.io/coverage) and
   [Concepts → Jurisdictions](/concepts/jurisdictions) for the status model.
 - **Segment classification** per permit via PermitCore's LLM-1
-  classifier (18 segments at launch; 22 today). See [Concepts → Cohorts](/concepts/cohorts).
+  classifier (18 segments at launch; 23 today). See [Concepts → Cohorts](/concepts/cohorts).
 - **Free in-browser sandbox** at <a href="https://permitcore.io/sandbox">
   permitcore.io/sandbox</a> — client-side DuckDB-WASM queries against the
   last 10 days of permits across the live metros. No signup required.

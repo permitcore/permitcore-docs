@@ -197,8 +197,7 @@ Most fields are **nullable** — coverage varies by jurisdiction and by upstream
 
 ### Enrichment field semantics
 
-{/* FOUNDER/A: site=22 vs API artifact canonical_cohort_count=23 — cross-repo drift, confirm the canonical taxonomy count (target_segment enum verified = 22) */}
-- **`cohort`** — the buyer-targeting bucket the row classifies into, one of the 22 canonical segments. `null` = row not in the cohort matview OR in the matview but unsegmented. Identical taxonomy to `target_segment` on `/v1/permits/target`. See [Concepts → Cohorts](/concepts/cohorts).
+- **`cohort`** — the buyer-targeting bucket the row classifies into, one of the 23 canonical segments. `null` = row not in the cohort matview OR in the matview but unsegmented. Identical taxonomy to `target_segment` on `/v1/permits/target`. See [Concepts → Cohorts](/concepts/cohorts).
 - **`dq_flags`** — 12-key boolean object from the bounds-rule registry. All 12 keys are always present when this field is non-null. **Semantic note:** `false` means *"the rule has not flagged this value,"* NOT *"the value was independently verified clean."* NULL silver flag values are coerced to `false` per the SD-039 rule. See [Data freshness → field-level DQ flags](/concepts/data-freshness#field-level-data-quality-flags) for the full flag set + semantics.
 - **`description_llm_enriched`** — LLM-extracted feature object (e.g. `scope_summary`, `unit_count`, `square_footage`, `tenant_improvement_flag`). Distinct column from `description_extracted` (which is adapter-populated, per-jurisdiction shape). **Coverage today:** Austin + Chicago `commercial_new` permits only (~17,861 prod rows). Broader cross-metro LLM extraction is on the roadmap.
 
@@ -233,14 +232,13 @@ geo filters (`state`, `metro_cbsa`), value bounds (`value_min`/`value_max`), and
 enrichment filters (`climate_zone`, `roof_area_min`, `hvac_tonnage_min`). It is
 **offset-only** (no `cursor`).
 
-{/* FOUNDER/A: site=22 vs API artifact canonical_cohort_count=23 — cross-repo drift, confirm the canonical taxonomy count (target_segment enum verified = 22) */}
-`target_segment` accepts a comma-separated list of the **22 canonical segment
+`target_segment` accepts a comma-separated list of the **23 canonical segment
 slugs** (see [Cohorts](/concepts/cohorts)). Behavior:
 
 - **Valid segment with zero rows in window:** `200 OK` with an empty
   `items` array — no `404`. Use `pagination.total_count` to confirm
   the empty result.
-- **Invalid slug** (not in the 22-segment enum): `422 Unprocessable Entity`
+- **Invalid slug** (not in the 23-segment enum): `422 Unprocessable Entity`
   ([`invalid-target-segment`](/errors/invalid-target-segment)) with a
   problem+json body enumerating the accepted whitelist.
 
