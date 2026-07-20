@@ -31,7 +31,7 @@ type (commercial / residential / industrial / civic) crossed with scope
 | `commercial_signage` | Commercial Signage Permits | Wall-mounted, monument, illuminated signs at commercial properties |
 | `industrial_new` | Industrial New Construction | Warehouses, distribution, manufacturing, data centers |
 | `multifamily_alteration` | Multifamily Alteration | Apartment + condo alterations, renovations, envelope work |
-| `multifamily_mep` | Multifamily MEP | Multifamily mechanical, electrical, plumbing systems |
+| `multifamily_mep` † | Multifamily MEP | Multifamily mechanical, electrical, plumbing systems |
 | `multifamily_new` | Multifamily New Construction | Ground-up apartments + condos — 5+ units, R-2 occupancy |
 | `residential_alteration` | Residential Alteration | Single-family renovations, additions, kitchen/bath remodels |
 | `residential_demolition` | Residential Demolition | Single-family teardowns + accessory-structure demolition |
@@ -42,6 +42,10 @@ type (commercial / residential / industrial / civic) crossed with scope
 | `solar_residential` | Residential Solar | Residential solar PV installs |
 | `storage_residential` | Residential Energy Storage | Residential battery / energy-storage (BESS) installs |
 | `temporary_construction_support` | Temporary Construction Support | Scaffolding, hoists, sidewalk sheds, temporary fencing |
+
+<Note>
+**† `multifamily_mep` is a newer cohort — filterable and populated, but narrower and not yet certified.** It returns real data, but it is **not yet held to the ≥99% classification-precision bar** the other 22 segments meet. Today it's classified in **3 metros** (primarily Austin — ~72% of rows — plus New York City and Norfolk), and its filings are **largely historical** (no new filings in the trailing 30-day window at the time of writing). Filter by it knowingly: expect metro-narrow, historical results, not the breadth or certified precision of the core segments. The other 22 are the established, site-certified set.
+</Note>
 
 ## What's NOT split out today
 
