@@ -8,10 +8,21 @@ permits from. Identified by a lowercase URL-safe slug (`nyc`, `la`, `houston`).
 
 ## Coverage today
 
-{/* FOUNDER/A: metro/jurisdiction counts (36 metros / 93 jurisdictions) are site ground truth — the per-metro name enumeration was removed because it could not be verified against the repo. Confirm the counts + point at the canonical live coverage source. */}
-PermitCore covers **36 metros** comprising **93 ingested jurisdictions** today —
-the top US metros by permit volume — with expansion following a defined coverage
-roadmap.
+PermitCore serves **93 live jurisdictions** today — the top US cities and
+counties by permit volume, grouping into roughly **60 metropolitan areas**
+(CBSA) — with expansion following a defined coverage roadmap.
+
+These are two numbers on **two different axes** — label them, don't conflate them:
+
+- **93 live jurisdictions** — the sources we actively serve and keep current. This
+  is a *curated* figure, not a raw catalog count: it's the set admitted to
+  production minus feeds that have gone fully stale, so it reflects what actually
+  returns fresh data rather than every source ever onboarded. A `jurisdiction`
+  (a city/county slug like `nyc`) is the primary `jurisdiction=` filter unit.
+- **~60 metropolitan areas** — the distinct CBSA metro areas those jurisdictions
+  roll up into (the axis the `metro_cbsa` filter uses). Several jurisdictions can
+  share one CBSA, so ~60 metro areas span the 93 jurisdictions — the coarser,
+  coverage-breadth view.
 
 | Status | What this means |
 |--------|-----------------|
