@@ -241,6 +241,10 @@ slugs** (see [Cohorts](/concepts/cohorts)). Behavior:
 - **Invalid slug** (not in the 23-segment enum): `422 Unprocessable Entity`
   ([`invalid-target-segment`](/errors/invalid-target-segment)) with a
   problem+json body enumerating the accepted whitelist.
+- **Newer cohort caveat:** `multifamily_mep` is filterable and populated but
+  **not yet certified to the ≥99% precision bar** of the other 22 segments —
+  currently 3 metros (primarily Austin), largely historical. See the note on
+  [Cohorts](/concepts/cohorts). The other 22 are the established, certified set.
 
 <Note>
 `/v1/permits/target` also has a separate `cohort` parameter — but it is a
