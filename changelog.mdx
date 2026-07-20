@@ -3,6 +3,51 @@ title: "Changelog"
 description: "Versioned release notes for the PermitCore API + docs site."
 ---
 
+## 2026-07-18 — Exports API, warehouse-native delivery, territory rollup
+
+Three endpoint families that were live on the wire are now documented and
+announced.
+
+### New endpoints
+
+- **`POST /v1/exports` + `GET /v1/exports` + `GET /v1/exports/{export_id}`** —
+  asynchronous bulk **CSV / XLSX** exports of a filtered permit slice. Create a
+  job, poll until `completed`, download a short-lived signed URL. See
+  [Exports](/api-reference/exports).
+- **`GET /v1/exports/warehouse/latest`** — warehouse-native delivery: a manifest
+  of the latest full-dataset drop as **Parquet + gzipped CSV** with signed R2
+  URLs, for loading straight into Snowflake / BigQuery / a lake.
+  `preserves_tristate_dq_flags` keeps the true/false/unknown DQ semantics intact.
+- **`GET /v1/permits/target`** — the curated commercial / multifamily / ADU
+  slice, filtered by `target_segment` (plus `state`, `metro_cbsa`, value and
+  enrichment filters). Same response envelope as `/v1/permits`; offset-only
+  paging. See [Permits → the `/v1/permits/target` variant](/api-reference/permits#the-v1permitstarget-variant).
+- **`GET /v1/territory/rollup`** — grouped aggregate counts + valuation by
+  `state` / `zip` / `metro_cbsa` / `jurisdiction`, with the same filter surface
+  as `/target`.
+
+### Segment taxonomy expanded to 22
+
+The canonical segment taxonomy grew as new cohorts were admitted:
+`commercial_hvac` (2026-06-06), `storage_residential` (2026-06-23),
+`residential_pool` (2026-06-26), and `solar_residential`. `target_segment` on
+`/v1/permits/target` now accepts all **22** canonical segment slugs. See
+[Cohorts](/concepts/cohorts).
+{/* FOUNDER/A: site=22 vs API artifact canonical_cohort_count=23 — cross-repo drift, confirm the canonical taxonomy count (target_segment enum verified = 22) */}
+
+### Error `type` URIs now resolve
+
+Every RFC 9457 `type` URI the API emits (`https://docs.permitcore.io/errors/<code>`)
+now resolves to a documented page under [Errors → Error codes](/errors) — so an
+SDK can follow the `type` URI straight to a fix.
+
+## 2026-06-27 — `legacy_code` removed from the 429 envelope
+
+The deprecated `legacy_code` field (value `"rate_limited"`), retained for clients
+written against the pre-RFC-9457 error shape, was **removed** from the 429
+`problem+json` body. Branch on the `type` URI (and `quota_kind`) instead. See
+[Rate limits](/concepts/rate-limits).
+
 ## 2026-06-04 — PD-7 enrichment promotion shipped
 
 The enrichment fields are now on the live wire.
@@ -23,9 +68,10 @@ The enrichment fields are now on the live wire.
 
 ### Additive fields on `PermitResponse` (both list + detail)
 
-- **`cohort`** — buyer-targeting bucket; one of the 18 canonical
-  cohorts, or `null` for unsegmented rows. Identical taxonomy to
-  `target_segment` on `/v1/permits/target`.
+- **`cohort`** — buyer-targeting bucket; one of the canonical
+  segments, or `null` for unsegmented rows. Identical taxonomy to
+  `target_segment` on `/v1/permits/target`. (The taxonomy has since
+  grown to 22 — see the 2026-07-18 entry.)
 - **`dq_flags`** — 12-key boolean object from the WS-PE-DQ-2
   bounds-rule registry. **Semantic note (SD-039):** `false` on a flag
   means *"the rule has not flagged this value,"* NOT *"the value was
@@ -138,13 +184,14 @@ First public release.
 ### Live at launch
 
 - **`GET /v1/jurisdictions/{slug}/cohorts/distribution`** — per-jurisdiction
-  cohort breakdown across the canonical 18 cohorts. Cached 1 hour upstream
+  cohort breakdown across the canonical segment taxonomy (18 at launch; 22
+  today — see the 2026-07-18 entry). Cached 1 hour upstream
   (`Cache-Control: max-age=3600`).
-- **25 US metros covered** (21 MAPPED + 4 DEPLOY-PENDING).
-  See [Concepts → Jurisdictions](/concepts/jurisdictions) for the status
-  meanings + per-status metro lists.
-- **18 canonical cohorts** classified per permit via PermitCore's LLM-1
-  classifier. See [Concepts → Cohorts](/concepts/cohorts).
+- **US metro coverage** across the top metros by permit volume — see the live
+  map at [permitcore.io/coverage](https://permitcore.io/coverage) and
+  [Concepts → Jurisdictions](/concepts/jurisdictions) for the status model.
+- **Segment classification** per permit via PermitCore's LLM-1
+  classifier (18 segments at launch; 22 today). See [Concepts → Cohorts](/concepts/cohorts).
 - **Free in-browser sandbox** at <a href="https://permitcore.io/sandbox">
   permitcore.io/sandbox</a> — client-side DuckDB-WASM queries against the
   last 10 days of permits across the live metros. No signup required.

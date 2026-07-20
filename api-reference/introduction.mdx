@@ -59,16 +59,23 @@ for the full catalog + retry guidance.
 
 <CardGroup cols={1}>
   <Card title="Cohort distribution" icon="chart-pie" href="/api-reference/jurisdictions/cohort-distribution">
+    {/* FOUNDER/A: site=22 vs API artifact canonical_cohort_count=23 — cross-repo drift, confirm the canonical taxonomy count (target_segment enum verified = 22) */}
     `GET /v1/jurisdictions/{slug}/cohorts/distribution` — per-jurisdiction
     breakdown across the canonical 22 cohorts. Cached 1 hour upstream.
     **Live today.**
   </Card>
   <Card title="Permits (list + filter)" icon="database" href="/api-reference/permits">
-    `GET /v1/permits?jurisdiction=&cohort=&issued_after=…` — paginated permit
-    rows with field-level DQ flags. **Live today.**
+    `GET /v1/permits?jurisdiction=&permit_type=&issued_after=…` — paginated
+    permit rows with field-level DQ flags. Segment filtering is on the
+    `/v1/permits/target` variant via `target_segment=`. **Live today.**
   </Card>
   <Card title="Jurisdiction overview" icon="map" href="/api-reference/jurisdictions/overview">
     Resource overview + jurisdiction list endpoint contracts.
+  </Card>
+  <Card title="Exports (bulk + warehouse)" icon="file-export" href="/api-reference/exports">
+    `POST /v1/exports`, `GET /v1/exports`, `GET /v1/exports/{export_id}`, and
+    `GET /v1/exports/warehouse/latest` — async CSV/XLSX exports plus
+    warehouse-native Parquet delivery. **Live today.**
   </Card>
   <Card title="API key management" icon="key" href="/api-reference/keys">
     `POST /v1/keys`, `DELETE /v1/keys/{prefix}`, `GET /v1/keys/{prefix}/usage`

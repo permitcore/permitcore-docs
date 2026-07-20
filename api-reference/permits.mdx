@@ -15,13 +15,30 @@ re-pulled before each docs deploy, never hand-written.
 
 ## Query parameters
 
-| Param            | Type            | Notes |
-|------------------|-----------------|-------|
-| `jurisdiction`   | string (slug)   | Required. Single metro slug, e.g. `nyc`, `la`. |
-| `target_segment` | string (slug)   | Optional. Curated cohort filter for the `/v1/permits/target` variant — see the variant section below. (The plain `cohort=` parameter on this endpoint arrives with the next promotion.) |
-| `issued_after`   | ISO 8601 date   | Optional. Lower bound for `issued_date` (YYYY-MM-DD). |
-| `per_page`       | integer         | Optional. Page size; max 500. |
-| `page`           | integer         | Optional. 1-indexed page number. |
+These are the parameters `/v1/permits` actually accepts, per the live
+OpenAPI spec. There is **no `cohort` parameter on `/v1/permits`** — buyer-segment
+filtering lives on the [`/v1/permits/target`](#the-v1permitstarget-variant)
+variant via `target_segment`.
+
+| Param                     | Type            | Notes |
+|---------------------------|-----------------|-------|
+| `jurisdiction`            | string (slug)   | Comma-separated jurisdiction slug(s), e.g. `nyc`, `la`. |
+| `issued_after`            | ISO 8601 date   | Lower bound for `issued_date` (YYYY-MM-DD). |
+| `issued_before`           | ISO 8601 date   | Upper bound for `issued_date`. |
+| `permit_type`             | string          | Filter by normalized permit type. |
+| `work_class`              | string          | Filter by work class. |
+| `bbox`                    | string          | `minLon,minLat,maxLon,maxLat` bounding box. |
+| `min_valuation`           | integer         | Minimum `valuation_usd`. |
+| `has_extracted`           | boolean         | Only rows with LLM-extracted enrichment. |
+| `updated_since`           | ISO 8601 date-time | Rows changed since a timestamp (delta sync). |
+| `contractor_canonical_id` | integer         | Filter to one canonical contractor. |
+| `parcel_key`              | string          | Filter to one parcel. |
+| `q`                       | string          | Free-text search (contractor / owner). Min 3 chars. |
+| `order_by`                | enum            | `issued_date` (default) · `applied_date` · `last_seen_at` · `valuation_usd`. |
+| `order_dir`               | enum            | `asc` · `desc`. |
+| `page`                    | integer         | 1-indexed page number (offset pagination). |
+| `per_page`                | integer         | Page size; 1–500. |
+| `cursor`                  | string          | Opaque keyset cursor for deep paging — see [Pagination](#pagination). When supplied, `page` is ignored. |
 
 ## Response shape
 
@@ -121,7 +138,44 @@ of the 2026-06-04 promotion. The nested `pluto` DQ-status object is
 }
 ```
 
-**Note on `total_count`**: capped at 1,000 on selective-filter queries. When `pagination.has_more` is `true`, the true total exceeds the cap — render as `"1,000+"` if you surface this number directly.
+The `pagination` object above is abbreviated for readability. See
+[Pagination](#pagination) for the full, canonical envelope both this endpoint
+and `/v1/permits/target` return.
+
+### Pagination
+
+`/v1/permits` and `/v1/permits/target` return the **same** response envelope:
+
+```json
+{
+  "items": [ /* … */ ],
+  "pagination": {
+    "page": 1,
+    "per_page": 25,
+    "total_pages": 40,
+    "total_count": 1000,
+    "total_count_is_estimate": true,
+    "has_more": true,
+    "next_page": 2,
+    "prev_page": null,
+    "next_cursor": "eyJpc3N1ZWRfZGF0ZSI6…"
+  },
+  "filters_applied": { "jurisdiction": "nyc" },
+  "query_time_ms": 34
+}
+```
+
+- **`total_count`** is capped at 1,000 on selective-filter queries, and
+  jurisdiction-only queries use a fast row estimate. When
+  `total_count_is_estimate` or `has_more` is `true`, the true total exceeds
+  `total_count` — render it as `"1,000+"` if you surface it directly.
+- **Offset paging** (both endpoints): pass `page` + `per_page`.
+- **Keyset / cursor paging** (`/v1/permits` only): pass the prior response's
+  `pagination.next_cursor` back as the `cursor` query parameter to page deep or
+  across jurisdictions without an `OFFSET` scan. When `cursor` is supplied,
+  `page` is ignored; the cursor is bound to the request's `order_by`/`order_dir`,
+  so keep those stable while paging. `next_cursor` is `null` on the last page.
+  `/v1/permits/target` is **offset-only** (`page`/`per_page`).
 
 ### What's on the wire
 
@@ -143,7 +197,8 @@ Most fields are **nullable** — coverage varies by jurisdiction and by upstream
 
 ### Enrichment field semantics
 
-- **`cohort`** — the buyer-targeting bucket the row classifies into, one of the 22 canonical cohorts. `null` = row not in the cohort matview OR in the matview but unsegmented. Identical taxonomy to `target_segment` on `/v1/permits/target`. See [Concepts → Cohorts](/concepts/cohorts).
+{/* FOUNDER/A: site=22 vs API artifact canonical_cohort_count=23 — cross-repo drift, confirm the canonical taxonomy count (target_segment enum verified = 22) */}
+- **`cohort`** — the buyer-targeting bucket the row classifies into, one of the 22 canonical segments. `null` = row not in the cohort matview OR in the matview but unsegmented. Identical taxonomy to `target_segment` on `/v1/permits/target`. See [Concepts → Cohorts](/concepts/cohorts).
 - **`dq_flags`** — 12-key boolean object from the bounds-rule registry. All 12 keys are always present when this field is non-null. **Semantic note:** `false` means *"the rule has not flagged this value,"* NOT *"the value was independently verified clean."* NULL silver flag values are coerced to `false` per the SD-039 rule. See [Data freshness → field-level DQ flags](/concepts/data-freshness#field-level-data-quality-flags) for the full flag set + semantics.
 - **`description_llm_enriched`** — LLM-extracted feature object (e.g. `scope_summary`, `unit_count`, `square_footage`, `tenant_improvement_flag`). Distinct column from `description_extracted` (which is adapter-populated, per-jurisdiction shape). **Coverage today:** Austin + Chicago `commercial_new` permits only (~17,861 prod rows). Broader cross-metro LLM extraction is on the roadmap.
 
@@ -171,17 +226,31 @@ when known. Only the nested `pluto` *DQ-status* object is detail-only.
 
 ## The `/v1/permits/target` variant
 
-`/v1/permits/target` accepts the same parameters but applies a curated
-commercial/multifamily/ADU filter via `target_segment=<cohort>`. This is
-the cohort-classified slice that the site's recency surfaces query.
+`/v1/permits/target` returns the same response envelope but exposes a curated
+commercial/multifamily/ADU slice, filtered by `target_segment=<segment>`. This is
+the cohort-classified slice that the site's recency surfaces query. It also adds
+geo filters (`state`, `metro_cbsa`), value bounds (`value_min`/`value_max`), and
+enrichment filters (`climate_zone`, `roof_area_min`, `hvac_tonnage_min`). It is
+**offset-only** (no `cursor`).
 
-`target_segment` accepts **all 22 canonical cohort slugs**. Behavior:
+{/* FOUNDER/A: site=22 vs API artifact canonical_cohort_count=23 — cross-repo drift, confirm the canonical taxonomy count (target_segment enum verified = 22) */}
+`target_segment` accepts a comma-separated list of the **22 canonical segment
+slugs** (see [Cohorts](/concepts/cohorts)). Behavior:
 
-- **Valid cohort with zero rows in window:** `200 OK` with an empty
+- **Valid segment with zero rows in window:** `200 OK` with an empty
   `items` array — no `404`. Use `pagination.total_count` to confirm
   the empty result.
-- **Invalid slug** (not in the 18-cohort enum): `422 Unprocessable Entity`
-  with a problem+json body enumerating the accepted whitelist.
+- **Invalid slug** (not in the 22-segment enum): `422 Unprocessable Entity`
+  ([`invalid-target-segment`](/errors/invalid-target-segment)) with a
+  problem+json body enumerating the accepted whitelist.
+
+<Note>
+`/v1/permits/target` also has a separate `cohort` parameter — but it is a
+**per-manufacturer cohort** (an A5 YAML basename such as `roofing-manufacturer`),
+**not** a buyer segment. An unknown value returns `400`
+([`unknown-cohort`](/errors/unknown-cohort)). Use `target_segment` for segment
+filtering; use `cohort` only for manufacturer-cohort targeting.
+</Note>
 
 ## Quotas
 

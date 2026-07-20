@@ -10,6 +10,7 @@ endpoint keep the name **`cohort`** (e.g. the `cohort` field on a permit, the
 "cohort" (API) are interchangeable.
 </Note>
 
+{/* FOUNDER/A: site=22 vs API artifact canonical_cohort_count=23 — cross-repo drift, confirm the canonical taxonomy count. 22 verified against the API's CANONICAL_TARGET_SEGMENTS frozenset (the enum /v1/permits/target validates target_segment against). */}
 Every permit ingested by PermitCore is classified into one of **22 canonical
 segments**. Segments are the primary axis for slicing the dataset — by use
 type (commercial / residential / industrial / civic) crossed with scope
@@ -23,6 +24,7 @@ type (commercial / residential / industrial / civic) crossed with scope
 | `civic` | Civic Construction | Public buildings — schools, libraries, transit, government facilities |
 | `commercial_alteration` | Commercial Alteration | Tenant improvements, additions, alterations, AND commercial roofing/envelope work |
 | `commercial_demolition` | Commercial Demolition | Commercial teardowns + structural demolition + abatement |
+| `commercial_hvac` | Commercial HVAC | Commercial heating / ventilation / AC — rooftop units, chillers, mechanical replacements |
 | `commercial_mep` | Commercial MEP | Commercial mechanical, electrical, plumbing systems |
 | `commercial_new` | Commercial New Construction | Ground-up commercial — offices, retail, mixed-use |
 | `commercial_pool` | Commercial Pool Construction | Commercial pools — hotels, gyms, condo amenities, apartments |
@@ -36,6 +38,9 @@ type (commercial / residential / industrial / civic) crossed with scope
 | `residential_foundation_only` | Residential Foundation-Only | Foundation-only filings — early-phase residential construction |
 | `residential_mep` | Residential MEP | Residential mechanical, electrical, plumbing — incl. solar PV |
 | `residential_new_sf` | Residential New (Single-Family) | Ground-up single-family homes — detached residential construction |
+| `residential_pool` | Residential Pool Construction | Residential pools + spas (single-family / low-density) |
+| `solar_residential` | Residential Solar | Residential solar PV installs |
+| `storage_residential` | Residential Energy Storage | Residential battery / energy-storage (BESS) installs |
 | `temporary_construction_support` | Temporary Construction Support | Scaffolding, hoists, sidewalk sheds, temporary fencing |
 
 ## What's NOT split out today

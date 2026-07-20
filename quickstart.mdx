@@ -25,7 +25,10 @@ export PERMITCORE_API_KEY=pk_...
 ## 3. Make your first request
 
 Your first call is `/v1/permits` — the core listing endpoint. Fetch recent New
-York City permits (add `&cohort=<segment>` to filter to a segment):
+York City permits. (To filter to a buyer segment, use the
+[`/v1/permits/target`](/api-reference/permits) endpoint with
+`&target_segment=<segment>` — `/v1/permits` itself has no `cohort` query
+parameter.)
 
 <CodeGroup>
 
@@ -93,8 +96,10 @@ Each permit carries a rich, structured record — address + geocode,
 classification (`cohort`, `work_class`, `permit_type_normalized`), scope,
 valuation, contractor, dates, data-quality flags, and enrichment. See
 [GET /v1/permits](/api-reference/permits) for the full field list and every
-query parameter. Add `&cohort=<segment>` to filter to a segment, or paginate
-with `&page=`.
+query parameter. To filter to a buyer segment, call
+[`GET /v1/permits/target?jurisdiction=nyc&target_segment=<segment>`](/api-reference/permits);
+paginate either endpoint with `&page=` (or, on `/v1/permits`, an opaque
+`&cursor=` for deep paging).
 
 Want the per-segment counts for a jurisdiction instead of the permit rows? Use
 [GET /v1/jurisdictions/{slug}/cohorts/distribution](/api-reference/jurisdictions/cohort-distribution).
@@ -103,7 +108,8 @@ Want the per-segment counts for a jurisdiction instead of the permit rows? Use
 
 <CardGroup cols={2}>
   <Card title="Cohort taxonomy" icon="layer-group" href="/concepts/cohorts">
-    The canonical 22 cohorts + what each one covers.
+    {/* FOUNDER/A: site=22 vs API artifact canonical_cohort_count=23 — cross-repo drift, confirm the canonical taxonomy count (target_segment enum verified = 22) */}
+    The canonical 22 segments + what each one covers.
   </Card>
   <Card title="Authentication" icon="lock" href="/authentication">
     Key formats, header conventions, security best practices.

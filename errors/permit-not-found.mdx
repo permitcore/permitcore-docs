@@ -1,0 +1,34 @@
+---
+title: "Permit not found"
+description: "404 — No permit matched the requested identifier."
+---
+
+No permit matched the requested identifier.
+
+```json 404 application/problem+json
+{
+  "type": "https://docs.permitcore.io/errors/permit-not-found",
+  "title": "Permit not found",
+  "status": 404,
+  "detail": "…",
+  "instance": "/v1/permits/by-canonical-uid/999%3AUNKNOWN-9999",
+  "request_id": "req_1f07fb45782b445e9f6312ba23921234"
+}
+```
+
+Every PermitCore error is [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)
+`application/problem+json`. **Branch on `type` (a stable URI)**, not on `title`
+or `detail` (human-readable, may change).
+
+## When it occurs
+
+The `permit_id` or `canonical_uid` was well-formed but no matching permit exists in the dataset.
+
+## How to fix
+
+Verify the identifier. A permit may not be present if its jurisdiction is not yet ingested, or the value was mistyped. Not retryable unchanged.
+
+**Not retryable** — fix the request before resubmitting; retrying unchanged returns the same error.
+
+See the full [error catalog](/errors) for the response shape and retry matrix.
+Every response carries an `x-request-id` header — include it in any support request.

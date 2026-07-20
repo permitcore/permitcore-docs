@@ -1,6 +1,6 @@
 ---
 title: "Jurisdictions"
-description: "What a jurisdiction is, the 25-metro coverage map today, and the MAPPED / DEPLOY-PENDING status model."
+description: "What a jurisdiction is, the metro coverage today, and the MAPPED / DEPLOY-PENDING status model."
 ---
 
 A **jurisdiction** is a single city or metro area that PermitCore ingests
@@ -8,24 +8,41 @@ permits from. Identified by a lowercase URL-safe slug (`nyc`, `la`, `houston`).
 
 ## Coverage today
 
-| Status | Count | What this means |
-|--------|-------|-----------------|
-| `MAPPED` | 36 metros | Full ingest active. Refreshed nightly. Cohort classification + DQ flags inline. Parcel-joined geometry where the metro publishes it. |
-| `DEPLOY-PENDING` | 4 metros | Code merged; production-ingest queue rollout coming soon. No live data yet. |
+{/* FOUNDER/A: metro/jurisdiction counts (36 metros / 93 jurisdictions) are site ground truth — the per-metro name enumeration was removed because it could not be verified against the repo. Confirm the counts + point at the canonical live coverage source. */}
+PermitCore covers **36 metros** comprising **93 ingested jurisdictions** today —
+the top US metros by permit volume — with expansion following a defined coverage
+roadmap.
 
-The **36 metros today** cover the top US metros by permit volume; expansion
-follows a defined cohort coverage roadmap.
+| Status | What this means |
+|--------|-----------------|
+| `MAPPED` | Full ingest active. Refreshed nightly. Segment classification + DQ flags inline. Parcel-joined geometry where the metro publishes it. API requests return real production data. |
+| `DEPLOY-PENDING` | Ingest code merged but not yet running in production for this metro. No live data yet; the cohort-distribution endpoint returns `404` for these slugs. |
 
-- **MAPPED (21):** NYC, LA, Chicago, Houston, Phoenix, SF, Austin, Seattle,
-  Boston, Atlanta, Miami, Denver, DC, Philadelphia, Charlotte, Portland,
-  Nashville, Las Vegas, Columbus, Fort Worth, San Antonio.
-- **DEPLOY-PENDING (4):** Dallas, Indianapolis, Jacksonville, Oklahoma City.
+The **authoritative, always-current metro/jurisdiction list is the live
+coverage map** at <a href="https://permitcore.io/coverage">permitcore.io/coverage</a>.
+Programmatically, any slug that returns `200` (rather than `404`) from the
+cohort-distribution endpoint is a jurisdiction PermitCore has data for.
+
+## Geographic filters
+
+The permit endpoints accept three distinct geographic filters — they are
+different axes, not three spellings of one thing:
+
+| Filter | Accepts | Example | Endpoints |
+|--------|---------|---------|-----------|
+| `jurisdiction` | Comma-separated jurisdiction **slugs** (the primary filter) | `nyc`, `la,houston` | `/v1/permits`, `/v1/permits/target`, `/v1/territory/rollup` |
+| `state` | Comma-separated USPS **state codes** | `TX,CA` | `/v1/permits/target`, `/v1/territory/rollup` |
+| `metro_cbsa` | Comma-separated **CBSA codes** | `41700` | `/v1/permits/target`, `/v1/territory/rollup` |
+
+Use `jurisdiction=<slug>` for city/metro filtering — it is the one supported on
+every permit endpoint. `state` and `metro_cbsa` are the broader alternatives on
+the `/target` and rollup surfaces.
 
 ## Status meanings
 
 ### MAPPED
 The metro's full permit feed is ingested nightly, classified to the canonical
-18 cohorts, DQ-flagged at the field level, and parcel-joined to PLUTO or
+segment taxonomy, DQ-flagged at the field level, and parcel-joined to PLUTO or
 the local equivalent where available. API requests against a MAPPED metro
 return real production data.
 
@@ -44,15 +61,15 @@ on ship.
 
 ## Slug list
 
-Browse all 25 metro pages: <a href="https://permitcore.io">permitcore.io</a>
-(metro tiles on the homepage).
+Browse the metro pages on the live coverage map:
+<a href="https://permitcore.io/coverage">permitcore.io/coverage</a>.
 
 A complete machine-readable list is available in the cohort-distribution
-endpoint's behavior: any slug that returns `200` (vs `404`) is a metro
-PermitCore has any data for.
+endpoint's behavior: any slug that returns `200` (vs `404`) is a jurisdiction
+PermitCore has data for.
 
 ## Related
 
-- [Cohorts](/concepts/cohorts) — the 18-cohort taxonomy that classifies every permit
+- [Cohorts](/concepts/cohorts) — the canonical segment taxonomy that classifies every permit
 - [Data freshness](/concepts/data-freshness) — nightly refresh cadence + `as_of_utc` interpretation
 - [Data licensing](/concepts/data-licensing) — commercial-use terms + attribution

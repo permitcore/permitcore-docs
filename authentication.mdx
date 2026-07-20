@@ -54,7 +54,7 @@ Auth failures are [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)
 |------|-------------|------|
 | `401` | [`missing-credentials`](/errors/missing-credentials) | No `Authorization` header sent |
 | `401` | [`invalid-credentials`](/errors/invalid-credentials) | Header sent but key is malformed / revoked / unknown |
-| `403` | `insufficient-scope` | Key is valid but lacks scope for this endpoint |
+| `403` | [`missing-scope`](/errors/missing-scope) | Key is valid but lacks scope for this endpoint |
 
 See [Errors](/errors) for the full response shape + retry guidance.
 See [Data licensing](/concepts/data-licensing) for commercial-use terms

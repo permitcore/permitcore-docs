@@ -137,6 +137,13 @@ false) — so the honesty semantics survive the round-trip into your warehouse.
 
 ## Errors
 
-Exports use the standard [RFC 9457 problem+json](/errors) shape. A `cohort`,
-`metros`, or `date_range` your key/tier can't export returns `403`
-(`tier-restricted`) or `400`; an unknown `export_id` returns `404` (`not-found`).
+Exports use the standard [RFC 9457 problem+json](/errors) shape. An invalid
+`cohort`, `metros`, or `date_range` returns `422`
+([`invalid-request`](/errors/invalid-request)); a key that lacks the required
+scope returns `403` ([`missing-scope`](/errors/missing-scope)); an unknown
+`export_id` returns `404` ([`export-not-found`](/errors/export-not-found)); too
+many concurrent jobs returns `429`
+([`export-concurrency-exceeded`](/errors/export-concurrency-exceeded)); and an
+exhausted export quota returns `429`
+([`monthly-exports-quota-exceeded`](/errors/monthly-exports-quota-exceeded) /
+[`daily-exports-quota-exceeded`](/errors/daily-exports-quota-exceeded)).
