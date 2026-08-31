@@ -8,6 +8,9 @@
     "dark": "#0a0a0a"
   },
   "favicon": "/favicon.svg",
+
+  "openapi": "https://api.permitcore.io/openapi.json",
+
   "navigation": {
     "groups": [
       {
